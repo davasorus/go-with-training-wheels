@@ -1,6 +1,5 @@
 /*
 Copyright © 2026 Sean Davitt
-
 */
 package main
 
