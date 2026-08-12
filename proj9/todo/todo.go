@@ -8,14 +8,14 @@ import (
 	"strconv"
 )
 
-type Item struct {
+type Todo struct {
 	Text     string
 	Priority int
 	position int
 	Done     bool
 }
 
-type ByPri []Item
+type ByPri []Todo
 
 func (a ByPri) Len() int      { return len(a) }
 func (a ByPri) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
@@ -29,7 +29,7 @@ func (a ByPri) Less(i, j int) bool {
 	return a[i].position < a[j].position
 }
 
-func SaveItems(fileName string, items []Item) error {
+func SaveItems(fileName string, items []Todo) error {
 
 	b, err := json.Marshal(items)
 	if err != nil {
@@ -47,14 +47,14 @@ func SaveItems(fileName string, items []Item) error {
 	return nil
 }
 
-func LoadItems(fileName string) ([]Item, error) {
+func LoadItems(fileName string) ([]Todo, error) {
 
 	b, err := os.ReadFile(fileName)
 	if err != nil {
 		return nil, err
 	}
 
-	var items []Item
+	var items []Todo
 	err = json.Unmarshal(b, &items)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func LoadItems(fileName string) ([]Item, error) {
 	return items, nil
 }
 
-func (i *Item) SetPriority(pri int) {
+func (i *Todo) SetPriority(pri int) {
 	switch pri {
 	case 0:
 		i.Priority = 0
@@ -81,7 +81,7 @@ func (i *Item) SetPriority(pri int) {
 	}
 }
 
-func (i *Item) PrettyP() string {
+func (i *Todo) PrettyP() string {
 	switch i.Priority {
 	case 0:
 		return "Low"
@@ -94,12 +94,16 @@ func (i *Item) PrettyP() string {
 	}
 }
 
-func (i *Item) Lable() string {
+func (i *Todo) Lable() string {
 	return strconv.Itoa(i.position) + "."
 }
-func (i *Item) DoneStatus() string {
+func (i *Todo) DoneStatus() string {
 	if i.Done {
 		return "Done"
 	}
 	return "Not Done"
+}
+
+func (i *Todo) String() string {
+	return fmt.Sprintf("%s %s [%s] %s", i.Lable(), i.Text, i.PrettyP(), i.DoneStatus())
 }

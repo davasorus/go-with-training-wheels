@@ -38,14 +38,14 @@ func init() {
 	// is called directly, e.g.:
 	// addCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
-	addCmd.Flags().IntVarP(&priority, "priority", "p", 0, "Priority of the item (0=Low, 1=Medium, 2=High). Default is 0")
+	addCmd.Flags().IntVarP(&priority, "priority", "p", 0, "Priority of the todo (0=Low, 1=Medium, 2=High). Default is 0")
 }
 
 func addRun(cmd *cobra.Command, args []string) {
 
-	items := []todo.Item{}
+	items := []todo.Todo{}
 	for _, arg := range args {
-		item := todo.Item{Text: arg}
+		item := todo.Todo{Text: arg}
 		item.SetPriority(priority)
 		items = append(items, item)
 	}

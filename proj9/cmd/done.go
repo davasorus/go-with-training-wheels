@@ -51,7 +51,7 @@ func doneRun(cmd *cobra.Command, args []string) {
 
 	if i > 0 && i <= len(items) {
 		items[i-1].Done = true
-		slog.Info("Marked item as done", "item", items[i-1])
+		slog.Info("Marked todo as done", "todo", items[i-1])
 
 		sort.Sort(todo.ByPri(items))
 
