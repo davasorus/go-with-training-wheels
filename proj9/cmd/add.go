@@ -50,7 +50,7 @@ func addRun(cmd *cobra.Command, args []string) {
 		items = append(items, item)
 	}
 
-	err := todo.SaveItems(dataFile, items)
+	err := todo.SaveItems(items)
 	if err != nil {
 		fmt.Println("Error saving items:", err)
 	}

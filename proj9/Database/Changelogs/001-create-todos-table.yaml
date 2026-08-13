@@ -1,7 +1,7 @@
 databaseChangeLog:
   - changeSet:
-      id: 1
-      author: assistant
+      id: 001-create-todos-table
+      author: sean
       changes:
         - createTable:
             tableName: todos
@@ -26,4 +26,4 @@ databaseChangeLog:
               - column:
                   name: done
                   type: boolean
-                  defaultValue: false
+                  defaultValueBoolean: false

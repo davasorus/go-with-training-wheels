@@ -42,7 +42,7 @@ func init() {
 }
 
 func doneRun(cmd *cobra.Command, args []string) {
-	items, err := todo.LoadItems(dataFile)
+	items, err := todo.LoadItems()
 	i, err := strconv.Atoi(args[0])
 	if err != nil {
 		slog.Error("Error converting argument to integer", "err", err)
@@ -55,7 +55,7 @@ func doneRun(cmd *cobra.Command, args []string) {
 
 		sort.Sort(todo.ByPri(items))
 
-		err = todo.SaveItems(dataFile, items)
+		err = todo.SaveItems(items)
 		if err != nil {
 			slog.Error("Error saving items", "err", err)
 			return

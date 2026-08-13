@@ -1,10 +1,8 @@
 package todo
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
-	"os"
 	"strconv"
 )
 
@@ -12,7 +10,8 @@ type Todo struct {
 	Text     string
 	Priority int
 	position int
-	Done     bool
+
+	Done bool
 }
 
 type ByPri []Todo
@@ -29,42 +28,30 @@ func (a ByPri) Less(i, j int) bool {
 	return a[i].position < a[j].position
 }
 
-func SaveItems(fileName string, items []Todo) error {
-
-	b, err := json.Marshal(items)
+func SaveItems(items []Todo) error {
+	repo, err := NewRepository()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to initialize repository: %w", err)
 	}
-
-	slog.Debug("Saving items to file", "fileName", fileName)
-
-	err = os.WriteFile(fileName, b, 0644)
+	err = repo.SaveItems(items)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to save items: %w", err)
 	}
-
-	fmt.Println(string(b))
+	slog.Debug("Saved items to database")
 	return nil
 }
 
-func LoadItems(fileName string) ([]Todo, error) {
-
-	b, err := os.ReadFile(fileName)
+func LoadItems() ([]Todo, error) {
+	repo, err := NewRepository()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to initialize repository: %w", err)
 	}
-
-	var items []Todo
-	err = json.Unmarshal(b, &items)
+	items, err := repo.ListItems()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load items: %w", err)
 	}
 
-	for i, _ := range items {
-		items[i].position = i + 1
-	}
-
-	slog.Debug("Loaded items from file", "fileName", fileName)
+	slog.Debug("Loaded items from database")
 	return items, nil
 }
 
@@ -94,7 +81,7 @@ func (i *Todo) PrettyP() string {
 	}
 }
 
-func (i *Todo) Lable() string {
+func (i *Todo) Label() string {
 	return strconv.Itoa(i.position) + "."
 }
 func (i *Todo) DoneStatus() string {
@@ -105,5 +92,5 @@ func (i *Todo) DoneStatus() string {
 }
 
 func (i *Todo) String() string {
-	return fmt.Sprintf("%s %s [%s] %s", i.Lable(), i.Text, i.PrettyP(), i.DoneStatus())
+	return fmt.Sprintf("%s %s [%s] %s", i.Label(), i.Text, i.PrettyP(), i.DoneStatus())
 }

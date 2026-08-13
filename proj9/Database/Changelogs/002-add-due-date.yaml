@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-add-due-date
+      author: sean
+      changes:
+        - addColumn:
+            tableName: todos
+            columns:
+              - column:
+                  name: due_date
+                  type: timestamptz

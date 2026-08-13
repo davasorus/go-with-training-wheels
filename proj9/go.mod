@@ -3,7 +3,8 @@ module github.com/davasorus/tri
 go 1.26.5
 
 require (
-	github.com/mitchellh/go-homedir v1.1.0
+	github.com/joho/godotenv v1.5.1
+	github.com/lib/pq v1.12.3
 	github.com/spf13/cobra v1.10.2
 )
 

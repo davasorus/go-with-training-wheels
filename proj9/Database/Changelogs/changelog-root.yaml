@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - include:
+      file: 001-create-todos-table.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: 002-add-due-date.yaml
+      relativeToChangelogFile: true

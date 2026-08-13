@@ -49,7 +49,7 @@ func init() {
 }
 
 func writeOutput(cmd *cobra.Command, args []string) {
-	items, err := todo.LoadItems(dataFile)
+	items, err := todo.LoadItems()
 	if err != nil {
 		slog.Error("Error loading items", "err", err)
 		return
@@ -60,12 +60,9 @@ func writeOutput(cmd *cobra.Command, args []string) {
 	w := tabwriter.NewWriter(os.Stdout, 3, 0, 1, ' ', 0)
 
 	for _, i := range items {
-		if i.Done == doneOpt {
-			fmt.Fprintln(w, i.Lable(), i.PrettyP()+"\t"+i.Text+"\t"+i.DoneStatus()+"\t")
-		} else {
-			fmt.Fprintln(w, i.Lable(), i.PrettyP()+"\t"+i.Text+"\t"+i.DoneStatus()+"\t")
+		if !doneOpt || i.Done {
+			fmt.Fprintln(w, i.Label(), i.PrettyP()+"\t"+i.Text+"\t"+i.DoneStatus()+"\t")
 		}
-
 	}
 
 	w.Flush()
