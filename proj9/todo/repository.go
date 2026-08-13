@@ -22,7 +22,7 @@ func NewRepository() (*Repository, error) {
 
 // ListItems fetches all items from the database.
 func (r *Repository) ListItems() ([]Todo, error) {
-	rows, err := r.db.Query(`SELECT id, text, priority, position, done FROM todos`)
+	rows, err := r.db.Query(`SELECT id, text, priority, position, done, due_date FROM todos`)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query items: %w", err)
 	}
@@ -32,7 +32,7 @@ func (r *Repository) ListItems() ([]Todo, error) {
 	for rows.Next() {
 		var id int
 		var item Todo
-		err := rows.Scan(&id, &item.Text, &item.Priority, &item.position, &item.Done)
+		err := rows.Scan(&id, &item.Text, &item.Priority, &item.Position, &item.Done, &item.DueDate)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan item: %w", err)
 		}
@@ -52,8 +52,9 @@ func (r *Repository) SaveItems(items []Todo) error {
 	defer tx.Rollback()
 
 	for _, item := range items {
-		_, err := tx.Exec(`INSERT INTO todos (text, priority, position, done) VALUES ($1, $2, $3, $4)`,
-			item.Text, item.Priority, item.position, item.Done)
+		_, err := tx.Exec(`INSERT INTO todos (text, priority, position, done, due_date) 
+			VALUES ($1, $2, $3, $4, $5)`,
+			item.Text, item.Priority, item.Position, item.Done, item.DueDate)
 		if err != nil {
 			return fmt.Errorf("failed to insert item: %w", err)
 		}

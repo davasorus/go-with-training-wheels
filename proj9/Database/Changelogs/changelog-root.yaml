@@ -5,3 +5,6 @@ databaseChangeLog:
   - include:
       file: 002-add-due-date.yaml
       relativeToChangelogFile: true
+  - include:
+      file: 003-add_unique_constraint.yaml
+      relativeToChangelogFile: true

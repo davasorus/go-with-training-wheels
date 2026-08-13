@@ -10,9 +10,9 @@ import (
 type Todo struct {
 	Text     string
 	Priority int
-	position int
-
-	Done bool
+	Position int
+	Done     bool
+	DueDate  *string // Use a pointer to handle NULL values from the database
 }
 
 // ByPri is a type for sorting tasks by priority and position.
@@ -25,12 +25,12 @@ func (a ByPri) Less(i, j int) bool {
 		return a[i].Done
 	}
 	if a[i].Priority == a[j].Priority {
-		return a[i].position < a[j].position
+		return a[i].Position < a[j].Position
 	}
-	return a[i].position < a[j].position
+	return a[i].Position < a[j].Position
 }
 
-// SaveItems saves a slice of Todo items to the database.
+// SaveItems saves a slice of Todo items to the database using an UPSERT pattern.
 func SaveItems(items []Todo) error {
 	repo, err := NewRepository()
 	if err != nil {
@@ -88,8 +88,9 @@ func (i *Todo) PrettyP() string {
 
 // Label returns the position of the task.
 func (i *Todo) Label() string {
-	return strconv.Itoa(i.position) + "."
+	return strconv.Itoa(i.Position) + "."
 }
+
 // DoneStatus returns the status of the task.
 func (i *Todo) DoneStatus() string {
 	if i.Done {

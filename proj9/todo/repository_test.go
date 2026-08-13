@@ -22,8 +22,8 @@ func TestRepository(t *testing.T) {
 
 	// Test SaveItems and ListItems integration
 	testItems := []Todo{
-		{Text: "Test Item 1", Priority: 2, position: 1},
-		{Text: "Test Item 2", Priority: 1, position: 2},
+		{Text: "Test Item 1", Priority: 2, Position: 1},
+		{Text: "Test Item 2", Priority: 1, Position: 2},
 	}
 	err = repo.SaveItems(testItems)
 	if err != nil {

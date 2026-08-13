@@ -30,9 +30,10 @@ func init() {
 func addRun(cmd *cobra.Command, args []string) {
 
 	items := []todo.Todo{}
-	for _, arg := range args {
+	for i, arg := range args {
 		item := todo.Todo{Text: arg}
 		item.SetPriority(priority)
+		item.Position = i + 1
 		items = append(items, item)
 	}
 
