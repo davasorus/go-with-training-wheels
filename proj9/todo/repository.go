@@ -7,12 +7,12 @@ import (
 	"github.com/davasorus/tri/Database"
 )
 
-// Repository defines the data access layer for Todo items.
+// Repository manages access to todo records in the database.
 type Repository struct {
 	db *sql.DB
 }
 
-// NewRepository creates a new instance of the Todo repository.
+// NewRepository creates a new instance of the Repository.
 func NewRepository() (*Repository, error) {
 	if Database.DB == nil {
 		return nil, fmt.Errorf("database connection not initialized")

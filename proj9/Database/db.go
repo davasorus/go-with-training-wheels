@@ -9,7 +9,9 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// Config holds database connection parameters.
 type Config struct {
+
 	Host     string
 	Port     string
 	User     string
@@ -17,8 +19,11 @@ type Config struct {
 	DBName   string
 }
 
+// DB is the global database connection pool.
+// DB is the global connection pool for the database.
 var DB *sql.DB
 
+// InitDB initializes the database connection.
 func InitDB() error {
 	// Load environment variables from the specified path
 	err := godotenv.Load("Database/.env")
@@ -53,10 +58,10 @@ func InitDB() error {
 	}
 
 	if err = DB.Ping(); err != nil {
-		// If ping fails, the database might not exist. Try to create it if it's missing.
-		fmt.Printf("Ping failed, attempting to ensure database %s exists...\n", cfg.DBName)
+		// If ping fails, the database may not exist. Try to create it if missing.
+		fmt.Printf("Ping failed. Attempt to ensure database %s exists...\n", cfg.DBName)
 
-		// Connect to default 'postgres' db to check/create target DB
+		// Connect to the default 'postgres' database to check or create the target.
 		adminDSN := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=postgres sslmode=disable",
 			cfg.Host, cfg.Port, cfg.User, cfg.Password)
 
@@ -75,9 +80,9 @@ func InitDB() error {
 		}
 
 		if !exists {
-			fmt.Printf("Database %s not found, creating it now...\n", cfg.DBName)
-			// Note: You cannot use "CREATE DATABASE" in a transaction block or with certain other SQL features.
-			// We execute it directly.
+			fmt.Printf("Database %s not found. Create it now...\n", cfg.DBName)
+			// Note: You cannot use "CREATE DATABASE" in a transaction block or with other SQL features.
+			// Execute it directly.
 			_, err = tmpDB.Exec(fmt.Sprintf("CREATE DATABASE %s", cfg.DBName))
 			if err != nil {
 				return fmt.Errorf("failed to create database: %w", err)

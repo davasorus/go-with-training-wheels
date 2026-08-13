@@ -6,6 +6,7 @@ import (
 	"strconv"
 )
 
+// Todo represents a single task in the list.
 type Todo struct {
 	Text     string
 	Priority int
@@ -14,6 +15,7 @@ type Todo struct {
 	Done bool
 }
 
+// ByPri is a type for sorting tasks by priority and position.
 type ByPri []Todo
 
 func (a ByPri) Len() int      { return len(a) }
@@ -28,6 +30,7 @@ func (a ByPri) Less(i, j int) bool {
 	return a[i].position < a[j].position
 }
 
+// SaveItems saves a slice of Todo items to the database.
 func SaveItems(items []Todo) error {
 	repo, err := NewRepository()
 	if err != nil {
@@ -41,6 +44,7 @@ func SaveItems(items []Todo) error {
 	return nil
 }
 
+// LoadItems retrieves all Todo items from the database.
 func LoadItems() ([]Todo, error) {
 	repo, err := NewRepository()
 	if err != nil {
@@ -68,6 +72,7 @@ func (i *Todo) SetPriority(pri int) {
 	}
 }
 
+// PrettyP returns the priority level as a string.
 func (i *Todo) PrettyP() string {
 	switch i.Priority {
 	case 0:
@@ -81,9 +86,11 @@ func (i *Todo) PrettyP() string {
 	}
 }
 
+// Label returns the position of the task.
 func (i *Todo) Label() string {
 	return strconv.Itoa(i.position) + "."
 }
+// DoneStatus returns the status of the task.
 func (i *Todo) DoneStatus() string {
 	if i.Done {
 		return "Done"
@@ -91,6 +98,7 @@ func (i *Todo) DoneStatus() string {
 	return "Not Done"
 }
 
+// String returns a formatted string representation of the task.
 func (i *Todo) String() string {
 	return fmt.Sprintf("%s %s [%s] %s", i.Label(), i.Text, i.PrettyP(), i.DoneStatus())
 }

@@ -13,39 +13,31 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// doneCmd represents the done command
+// doneCmd represents the command to mark a task as complete.
 var doneCmd = &cobra.Command{
 	Use:     "done",
 	Aliases: []string{"do"},
-	Short:   "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short:   "Mark a task as completed.",
+	Long:    `Mark a task as done using its position in the list.
+Example: tri do 1`,
 	Run: doneRun,
 }
 
 func init() {
 	rootCmd.AddCommand(doneCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// doneCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// doneCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
+// doneRun handles the logic for marking a task as completed.
 func doneRun(cmd *cobra.Command, args []string) {
 	items, err := todo.LoadItems()
+	if err != nil {
+		slog.Error("Failed to load items", "err", err)
+		return
+	}
+
 	i, err := strconv.Atoi(args[0])
 	if err != nil {
-		slog.Error("Error converting argument to integer", "err", err)
+		slog.Error("Invalid index provided", "err", err)
 		return
 	}
 
@@ -57,12 +49,11 @@ func doneRun(cmd *cobra.Command, args []string) {
 
 		err = todo.SaveItems(items)
 		if err != nil {
-			slog.Error("Error saving items", "err", err)
+			slog.Error("Failed to save items", "err", err)
 			return
 		}
 		slog.Debug("Items saved successfully", "count", len(items))
 	} else {
-		log.Println(i, "doesn't match any items")
+		log.Println(i, "does not match any item")
 	}
-
 }
