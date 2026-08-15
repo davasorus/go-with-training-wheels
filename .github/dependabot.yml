@@ -1,0 +1,38 @@
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /proj1
+    schedule:
+      interval: daily
+  - package-ecosystem: gomod
+    directory: /proj2
+    schedule:
+      interval: daily
+  - package-ecosystem: gomod
+    directory: /proj3
+    schedule:
+      interval: daily
+  - package-ecosystem: gomod
+    directory: /proj4
+    schedule:
+      interval: daily
+  - package-ecosystem: gomod
+    directory: /proj5
+    schedule:
+      interval: daily
+  - package-ecosystem: gomod
+    directory: /proj6
+    schedule:
+      interval: daily
+  - package-ecosystem: gomod
+    directory: /proj7
+    schedule:
+      interval: daily
+  - package-ecosystem: gomod
+    directory: /proj8
+    schedule:
+      interval: daily
+  - package-ecosystem: gomod
+    directory: /proj9
+    schedule:
+      interval: daily
