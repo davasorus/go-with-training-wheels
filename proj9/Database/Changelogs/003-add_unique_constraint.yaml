@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-add_unique_constraint
+      author: sean
+      changes:
+        - addUniqueConstraint:
+            tableName: todos
+            columnNames: text
+            constraintName: uk_todo_text

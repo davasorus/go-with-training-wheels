@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 000-create-todos-database
+      author: sean
+      runInTransaction: false
+      preConditions:
+        - onFail: MARK_RAN
+        - sqlCheck:
+            expectedResult: 0
+            sql: SELECT COUNT(*) FROM pg_database WHERE datname = 'todos'
+      changes:
+        - sql:
+            sql: CREATE DATABASE todos

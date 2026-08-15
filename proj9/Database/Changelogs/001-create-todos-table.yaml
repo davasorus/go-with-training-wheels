@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-todos-table
+      author: sean
+      changes:
+        - createTable:
+            tableName: todos
+            columns:
+              - column:
+                  name: id
+                  type: serial
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: text
+                  type: text
+                  constraints:
+                    notNull: true
+              - column:
+                  name: priority
+                  type: integer
+                  defaultValue: 0
+              - column:
+                  name: position
+                  type: integer
+              - column:
+                  name: done
+                  type: boolean
+                  defaultValueBoolean: false
