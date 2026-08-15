@@ -4,7 +4,7 @@ Copyright © 2026 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"log"
+	"fmt"
 	"log/slog"
 	"sort"
 	"strconv"
@@ -18,7 +18,7 @@ var doneCmd = &cobra.Command{
 	Use:     "done",
 	Aliases: []string{"do"},
 	Short:   "Mark a task as completed.",
-	Long:    `Mark a task as done using its position in the list.
+	Long: `Mark a task as done using its position in the list.
 Example: tri do 1`,
 	Run: doneRun,
 }
@@ -29,31 +29,42 @@ func init() {
 
 // doneRun handles the logic for marking a task as completed.
 func doneRun(cmd *cobra.Command, args []string) {
+	if len(args) == 0 {
+		slog.Error("No index provided")
+		return
+	}
+
+	err := processDone(args[0])
+	if err != nil {
+		slog.Error("Failed to mark done", "error", err)
+		return
+	}
+}
+
+// processDone handles the logic for finding and marking a task as completed.
+func processDone(argStr string) error {
 	items, err := todo.LoadItems()
 	if err != nil {
-		slog.Error("Failed to load items", "err", err)
-		return
+		return fmt.Errorf("failed to load items: %w", err)
 	}
 
-	i, err := strconv.Atoi(args[0])
+	i, err := strconv.Atoi(argStr)
 	if err != nil {
-		slog.Error("Invalid index provided", "err", err)
-		return
+		return fmt.Errorf("invalid index provided: %w", err)
 	}
 
-	if i > 0 && i <= len(items) {
-		items[i-1].Done = true
-		slog.Info("Marked todo as done", "todo", items[i-1])
-
-		sort.Sort(todo.ByPri(items))
-
-		err = todo.SaveItems(items)
-		if err != nil {
-			slog.Error("Failed to save items", "err", err)
-			return
-		}
-		slog.Debug("Items saved successfully", "count", len(items))
-	} else {
-		log.Println(i, "does not match any item")
+	if i <= 0 || i > len(items) {
+		return fmt.Errorf("%d does not match any item", i)
 	}
+
+	items[i-1].Done = true
+	sort.Sort(todo.ByPri(items))
+
+	err = todo.SaveItems(items)
+	if err != nil {
+		return fmt.Errorf("failed to save items: %w", err)
+	}
+
+	slog.Info("Marked todo as done", "index", i)
+	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"time"
 )
 
 // Todo represents a single task in the list.
@@ -12,7 +13,7 @@ type Todo struct {
 	Priority int
 	Position int
 	Done     bool
-	DueDate  *string // Use a pointer to handle NULL values from the database
+	DueDate  *time.Time // Use a pointer to handle NULL values from the database
 }
 
 // ByPri is a type for sorting tasks by priority and position.

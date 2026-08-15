@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/davasorus/tri/models" // Ensure models is imported correctly
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
 // Config holds database connection parameters.
 type Config struct {
-
 	Host     string
 	Port     string
 	User     string
@@ -19,8 +19,86 @@ type Config struct {
 	DBName   string
 }
 
+// Store wraps the sql.DB and provides methods for database operations.
+type Store struct {
+	db *sql.DB
+}
+
+// NewStore creates a new instance of the Store.
+func NewStore() (*Store, error) {
+	if DB == nil {
+		return nil, fmt.Errorf("database connection not initialized")
+	}
+	return &Store{db: DB}, nil
+}
+
+// ListItems fetches all items from the database.
+func (s *Store) ListItems() ([]models.Todo, error) {
+	rows, err := s.db.Query(`SELECT id, text, priority, position, done, due_date FROM todos`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query items: %w", err)
+	}
+	defer rows.Close()
+
+	var items []models.Todo
+	for rows.Next() {
+		var item models.Todo
+		err := rows.Scan(&item.ID, &item.Text, &item.Priority, &item.Position, &item.Done, &item.DueDate)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan item: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed while iterating items: %w", err)
+	}
+
+	return items, nil
+}
+
+// SaveItems persists a slice of todos into the database using a transaction.
+func (s *Store) SaveItems(items []models.Todo) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	defer tx.Rollback()
+
+	for _, item := range items {
+		_, err := tx.Exec(`INSERT INTO todos (text, priority, position, done, due_date) 
+			VALUES ($1, $2, $3, $4, $5)
+			ON CONFLICT (text) DO UPDATE SET 
+				priority = EXCLUDED.priority,
+				position = EXCLUDED.position,
+				done = EXCLUDED.done,
+				due_date = EXCLUDED.due_date`,
+			item.Text, item.Priority, item.Position, item.Done, item.DueDate)
+		if err != nil {
+			return fmt.Errorf("failed to insert item: %w", err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+	return nil
+}
+
+// UpdateItemStatus updates the status of a specific todo by its ID.
+func (s *Store) UpdateItemStatus(id int, done bool) error {
+	res, err := s.db.Exec(`UPDATE todos SET done = $1 WHERE id = $2`, done, id)
+	if err != nil {
+		return fmt.Errorf("failed to update item: %w", err)
+	}
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("no record found with id %d", id)
+	}
+	return nil
+}
+
 // DB is the global database connection pool.
-// DB is the global connection pool for the database.
 var DB *sql.DB
 
 // InitDB initializes the database connection.
