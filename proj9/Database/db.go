@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/davasorus/tri/models" // Ensure models is imported correctly
+	"github.com/davasorus/tri/models"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -26,11 +26,13 @@ type Store struct {
 
 // NewStore creates a new instance of the Store.
 func NewStore() (*Store, error) {
-	if DB == nil {
+	if globalDB == nil {
 		return nil, fmt.Errorf("database connection not initialized")
 	}
-	return &Store{db: DB}, nil
+	return &Store{db: globalDB}, nil
 }
+
+var globalDB *sql.DB
 
 // ListItems fetches all items from the database.
 func (s *Store) ListItems() ([]models.Todo, error) {
@@ -98,9 +100,6 @@ func (s *Store) UpdateItemStatus(id int, done bool) error {
 	return nil
 }
 
-// DB is the global database connection pool.
-var DB *sql.DB
-
 // InitDB initializes the database connection.
 func InitDB() error {
 	// Load environment variables from the specified path
@@ -130,12 +129,12 @@ func InitDB() error {
 	)
 
 	var err2 error
-	DB, err2 = sql.Open("postgres", dsn)
+	globalDB, err2 = sql.Open("postgres", dsn)
 	if err2 != nil {
 		return fmt.Errorf("failed to open database: %w", err2)
 	}
 
-	if err = DB.Ping(); err != nil {
+	if err = globalDB.Ping(); err != nil {
 		// If ping fails, the database may not exist. Try to create it if missing.
 		fmt.Printf("Ping failed. Attempt to ensure database %s exists...\n", cfg.DBName)
 
@@ -168,7 +167,7 @@ func InitDB() error {
 		}
 
 		// Now try to ping the original connection again
-		if err = DB.Ping(); err != nil {
+		if err = globalDB.Ping(); err != nil {
 			return fmt.Errorf("failed to ping database after creation attempt: %w", err)
 		}
 	}

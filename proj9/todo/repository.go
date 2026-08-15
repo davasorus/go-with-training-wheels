@@ -33,7 +33,7 @@ type todoStoreAdapter struct {
 }
 
 func (a *todoStoreAdapter) ListItems() ([]Todo, error) {
-	items, err := a.Store.ListItems() // Returns []models.Todo
+	items, err := a.Store.ListItems()
 	if err != nil {
 		return nil, err
 	}
@@ -45,8 +45,7 @@ func (a *todoStoreAdapter) ListItems() ([]Todo, error) {
 			Priority: item.Priority,
 			Position: item.Position,
 			Done:     item.Done,
-			DueDate:  item.DueDate, // Note: This assumes the underlying type of item.DueDate matches the target's field.
-			// Wait, I need to check why this is failing.
+			DueDate:  item.DueDate,
 		}
 	}
 	return res, nil
