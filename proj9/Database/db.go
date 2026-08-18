@@ -24,15 +24,13 @@ type Store struct {
 	db *sql.DB
 }
 
-// NewStore creates a new instance of the Store.
-func NewStore() (*Store, error) {
-	if globalDB == nil {
-		return nil, fmt.Errorf("database connection not initialized")
+// NewStore creates a new instance of the Store from an existing connection.
+func NewStore(db *sql.DB) (*Store, error) {
+	if db == nil {
+		return nil, fmt.Errorf("database connection is nil")
 	}
-	return &Store{db: globalDB}, nil
+	return &Store{db: db}, nil
 }
-
-var globalDB *sql.DB
 
 // ListItems fetches all items from the database.
 func (s *Store) ListItems() ([]models.Todo, error) {
@@ -100,8 +98,8 @@ func (s *Store) UpdateItemStatus(id int, done bool) error {
 	return nil
 }
 
-// InitDB initializes the database connection.
-func InitDB() error {
+// InitDB initializes the database connection and returns a Store.
+func InitDB() (*Store, error) {
 	// Load environment variables from the specified path
 	err := godotenv.Load("Database/.env")
 	if err != nil {
@@ -128,13 +126,12 @@ func InitDB() error {
 		cfg.DBName,
 	)
 
-	var err2 error
-	globalDB, err2 = sql.Open("postgres", dsn)
-	if err2 != nil {
-		return fmt.Errorf("failed to open database: %w", err2)
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
-	if err = globalDB.Ping(); err != nil {
+	if err = db.Ping(); err != nil {
 		// If ping fails, the database may not exist. Try to create it if missing.
 		fmt.Printf("Ping failed. Attempt to ensure database %s exists...\n", cfg.DBName)
 
@@ -144,7 +141,7 @@ func InitDB() error {
 
 		tmpDB, errTmp := sql.Open("postgres", adminDSN)
 		if errTmp != nil {
-			return fmt.Errorf("failed to open administrative connection: %w", errTmp)
+			return nil, fmt.Errorf("failed to open administrative connection: %w", errTmp)
 		}
 		defer tmpDB.Close()
 
@@ -153,7 +150,7 @@ func InitDB() error {
 		query := fmt.Sprintf(`SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname='%s')`, cfg.DBName)
 		err = tmpDB.QueryRow(query).Scan(&exists)
 		if err != nil {
-			return fmt.Errorf("failed to check if database exists: %w", err)
+			return nil, fmt.Errorf("failed to check if database exists: %w", err)
 		}
 
 		if !exists {
@@ -162,15 +159,15 @@ func InitDB() error {
 			// Execute it directly.
 			_, err = tmpDB.Exec(fmt.Sprintf("CREATE DATABASE %s", cfg.DBName))
 			if err != nil {
-				return fmt.Errorf("failed to create database: %w", err)
+				return nil, fmt.Errorf("failed to create database: %w", err)
 			}
 		}
 
 		// Now try to ping the original connection again
-		if err = globalDB.Ping(); err != nil {
-			return fmt.Errorf("failed to ping database after creation attempt: %w", err)
+		if err = db.Ping(); err != nil {
+			return nil, fmt.Errorf("failed to ping database after creation attempt: %w", err)
 		}
 	}
 
-	return nil
+	return NewStore(db)
 }

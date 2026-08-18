@@ -32,12 +32,8 @@ func (a ByPri) Less(i, j int) bool {
 }
 
 // SaveItems saves a slice of Todo items to the database using an UPSERT pattern.
-func SaveItems(items []Todo) error {
-	repo, err := NewRepository()
-	if err != nil {
-		return fmt.Errorf("failed to initialize repository: %w", err)
-	}
-	err = repo.SaveItems(items)
+func SaveItems(r TodoStore, items []Todo) error {
+	err := r.SaveItems(items)
 	if err != nil {
 		return fmt.Errorf("failed to save items: %w", err)
 	}
@@ -46,12 +42,8 @@ func SaveItems(items []Todo) error {
 }
 
 // LoadItems retrieves all Todo items from the database.
-func LoadItems() ([]Todo, error) {
-	repo, err := NewRepository()
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize repository: %w", err)
-	}
-	items, err := repo.ListItems()
+func LoadItems(r TodoStore) ([]Todo, error) {
+	items, err := r.ListItems()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load items: %w", err)
 	}

@@ -1,6 +1,3 @@
-/*
-Copyright © 2026 Sean Davitt
-*/
 package cmd
 
 import (
@@ -8,10 +5,9 @@ import (
 	"os"
 
 	"github.com/davasorus/tri/Database"
+	"github.com/davasorus/tri/todo"
 	"github.com/spf13/cobra"
 )
-
-var dataFile string
 
 // rootCmd represents the base command of the tri tool.
 var rootCmd = &cobra.Command{
@@ -24,16 +20,20 @@ tri add -p high task name`,
 
 // Execute initializes the database and runs the command tree.
 func Execute() {
-	if err := Database.InitDB(); err != nil {
+	store, err := Database.InitDB()
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "Database connection error: %v\n", err)
 		os.Exit(1)
 	}
 
-	err := rootCmd.Execute()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
+	adapter := todo.NewTodoStoreAdapter(store)
+	repo := todo.NewRepository(adapter)
+
+	// Register subcommands with the repository injected.
+	rootCmd.AddCommand(addCmd(repo))
+	rootCmd.AddCommand(listCmd(repo))
+	rootCmd.AddCommand(doneCmd(repo))
+	rootCmd.AddCommand(NewMigrateDbCmd())
 }
 
 func init() {

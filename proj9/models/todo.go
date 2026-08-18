@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// Todo represents a task in the to-do list application.
 type Todo struct {
 	ID       int
 	Text     string

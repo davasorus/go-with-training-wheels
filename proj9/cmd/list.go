@@ -14,43 +14,33 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// listCmd represents the command to list tasks.
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List all tasks.",
-	Long: `Display a table of tasks. 
+// listCmd returns the command to list tasks.
+func listCmd(repo todo.TodoStore) *cobra.Command {
+	var doneOpt bool
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "List all tasks.",
+		Long: `Display a table of tasks. 
 Example: tri list --done`,
-	Run: writeOutput,
-}
+		Run: func(cmd *cobra.Command, args []string) {
+			items, err := repo.ListItems()
+			if err != nil {
+				slog.Error("Error loading items", "err", err)
+				return
+			}
 
-var (
-	doneOpt bool
-	allOpt  bool
-)
+			sort.Sort(todo.ByPri(items))
 
-func init() {
-	rootCmd.AddCommand(listCmd)
-
-	listCmd.Flags().BoolVar(&doneOpt, "done", false, "Show only completed items")
-}
-
-// writeOutput displays the list of tasks in a table format.
-func writeOutput(cmd *cobra.Command, args []string) {
-	items, err := todo.LoadItems()
-	if err != nil {
-		slog.Error("Error loading items", "err", err)
-		return
+			tw := tabwriter.NewWriter(os.Stdout, 3, 0, 1, ' ', 0)
+			for _, i := range items {
+				if !doneOpt || i.Done {
+					fmt.Fprintln(tw, i.Label(), i.PrettyP()+"\t"+i.Text+"\t"+i.DoneStatus()+"\t")
+				}
+			}
+			tw.Flush()
+		},
 	}
 
-	sort.Sort(todo.ByPri(items))
-
-	w := tabwriter.NewWriter(os.Stdout, 3, 0, 1, ' ', 0)
-
-	for _, i := range items {
-		if !doneOpt || i.Done {
-			fmt.Fprintln(w, i.Label(), i.PrettyP()+"\t"+i.Text+"\t"+i.DoneStatus()+"\t")
-		}
-	}
-
-	w.Flush()
+	cmd.Flags().BoolVar(&doneOpt, "done", false, "Show only completed items")
+	return cmd
 }

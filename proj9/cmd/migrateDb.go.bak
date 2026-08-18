@@ -55,6 +55,6 @@ var migrateDbCmd = &cobra.Command{
 	},
 }
 
-func NewMigrateDbCmd() *cobra.Command {
-	return migrateDbCmd
+func init() {
+	rootCmd.AddCommand(migrateDbCmd)
 }
