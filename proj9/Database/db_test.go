@@ -15,11 +15,9 @@ import (
 // available at the configured location, it will fail on Ping(), but it
 // confirms that the connection logic and configuration loading are functional.
 func TestInitDB(t *testing.T) {
-	// We call InitDB to ensure it can navigate through its internal logic:
-	// 1. Loading .env (even if failing, it should warn and continue)
-	// 2. Building the DSN string
-	// 3. Initializing the sql.DB object
-	err := InitDB()
+	// We call InitDB() which returns (*Store, error).
+	// Note: This test might fail if no DB is available at the configured location.
+	_, err := InitDB()
 
 	if err != nil {
 		t.Logf("Notice: Database initialization failed as expected without a real DB reachable at local config: %v", err)
@@ -27,17 +25,14 @@ func TestInitDB(t *testing.T) {
 }
 
 func TestNewStore(t *testing.T) {
-	// Case 1: globalDB is not initialized.
-	globalDB = nil
-	store, err := NewStore()
+	// Case 1: Nil database connection
+	store, err := NewStore(nil)
 	assert.Nil(t, store)
-	assert.EqualError(t, err, "database connection not initialized")
+	assert.EqualError(t, err, "database connection is nil")
 
-	// Case 2: globalDB is initialized (simulated).
-	// We can't easily create a real *sql.DB here without a connection,
-	// but we can set the variable to see if the constructor proceeds.
-	globalDB = &sql.DB{} // This is still a dummy DB but it's no longer nil
-	store, err = NewStore()
+	// Case 2: Non-nil (dummy) database connection
+	db := &sql.DB{} // This is a dummy but it's no longer nil
+	store, err = NewStore(db)
 	assert.NotNil(t, store)
 	assert.NoError(t, err)
 }

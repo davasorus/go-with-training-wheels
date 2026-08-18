@@ -64,11 +64,6 @@ func executeUpdate(r todo.TodoStore, argStr string) error {
 	return nil
 }
 
-// processDone is a wrapper for executeUpdate to satisfy the expected interface if needed.
-func processDone(repo *todo.Repository, argStr string) error {
-	return executeUpdate(repo, argStr)
-}
-
 // validateIndex validates the index provided and returns it as an int.
 func validateIndex(input string, count int) (int, error) {
 	i, err := strconv.Atoi(input)

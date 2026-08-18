@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"sort"
@@ -13,6 +14,17 @@ import (
 	"github.com/davasorus/tri/todo"
 	"github.com/spf13/cobra"
 )
+
+// renderList outputs the list of items to the provided writer.
+func renderList(w io.Writer, items []todo.Todo, showOnlyDone bool) {
+	tw := tabwriter.NewWriter(w, 3, 0, 1, ' ', 0)
+	for _, i := range items {
+		if !showOnlyDone || i.Done {
+			fmt.Fprintln(tw, i.Label(), i.PrettyP()+"\t"+i.Text+"\t"+i.DoneStatus()+"\t")
+		}
+	}
+	tw.Flush()
+}
 
 // listCmd returns the command to list tasks.
 func listCmd(repo todo.TodoStore) *cobra.Command {
@@ -31,13 +43,7 @@ Example: tri list --done`,
 
 			sort.Sort(todo.ByPri(items))
 
-			tw := tabwriter.NewWriter(os.Stdout, 3, 0, 1, ' ', 0)
-			for _, i := range items {
-				if !doneOpt || i.Done {
-					fmt.Fprintln(tw, i.Label(), i.PrettyP()+"\t"+i.Text+"\t"+i.DoneStatus()+"\t")
-				}
-			}
-			tw.Flush()
+			renderList(os.Stdout, items, doneOpt)
 		},
 	}
 

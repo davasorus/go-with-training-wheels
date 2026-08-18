@@ -63,7 +63,7 @@ func (s *Store) SaveItems(items []models.Todo) error {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
 
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	for _, item := range items {
 		_, err := tx.Exec(`INSERT INTO todos (text, priority, position, done, due_date) 
