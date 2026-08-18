@@ -22,11 +22,11 @@ type ByPri []Todo
 func (a ByPri) Len() int      { return len(a) }
 func (a ByPri) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ByPri) Less(i, j int) bool {
-	if a[i].Done && !a[j].Done {
+	if a[i].Done != a[j].Done {
 		return a[i].Done
 	}
-	if a[i].Priority == a[j].Priority {
-		return a[i].Position < a[j].Position
+	if a[i].Priority != a[j].Priority {
+		return a[i].Priority > a[j].Priority
 	}
 	return a[i].Position < a[j].Position
 }
