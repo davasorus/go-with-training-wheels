@@ -6,14 +6,12 @@ package cmd
 import (
 	"fmt"
 	"log/slog"
-	"sort"
-	"strconv"
 
 	"github.com/davasorus/tri/todo"
 	"github.com/spf13/cobra"
 )
 
-// doneCmd returns the command to mark a task as complete.
+// doneCmd returns the command to mark a task as completed.
 func doneCmd(repo todo.TodoStore) *cobra.Command {
 	return &cobra.Command{
 		Use:     "done",
@@ -27,9 +25,12 @@ Example: tri do 1`,
 				return
 			}
 
-			err := executeUpdate(repo, args[0])
+			err := WaitSpinner("Marking as done", func() error {
+				return executeUpdate(repo, args[0])
+			})
+
 			if err != nil {
-				slog.Error("Failed to mark done", "error", err)
+				fmt.Println("Error: Failed to mark the task as done. Please ensure you provided a valid index.")
 				return
 			}
 		},
@@ -47,33 +48,16 @@ func executeUpdate(r todo.TodoStore, argStr string) error {
 		return fmt.Errorf("failed to load items: %w", err)
 	}
 
-	i, err := validateIndex(argStr, len(items))
+	idx, err := validateIndex(argStr, len(items))
 	if err != nil {
 		return err
 	}
 
-	items[i-1].Done = true
-	sort.Sort(todo.ByPri(items))
-
-	err = r.SaveItems(items)
+	err = r.UpdateItemStatus(idx-1, true)
 	if err != nil {
-		return fmt.Errorf("failed to save items: %w", err)
+		return fmt.Errorf("failed to update item: %w", err)
 	}
 
-	slog.Info("Marked todo as done", "index", i)
+	slog.Info("Marked_done_success", "index", idx)
 	return nil
-}
-
-// validateIndex validates the index provided and returns it as an int.
-func validateIndex(input string, count int) (int, error) {
-	i, err := strconv.Atoi(input)
-	if err != nil {
-		return 0, fmt.Errorf("not a number")
-	}
-
-	if i <= 0 || i > count {
-		return 0, fmt.Errorf("%d does not match any item", i)
-	}
-
-	return i, nil
 }

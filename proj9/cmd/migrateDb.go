@@ -41,11 +41,14 @@ var migrateDbCmd = &cobra.Command{
 		}
 
 		for _, argv := range steps {
-			c := exec.Command("liquibase", argv...)
-			c.Dir = "Database/Changelogs"
-			c.Stdout = os.Stdout
-			c.Stderr = os.Stderr
-			if err := c.Run(); err != nil {
+			err := WaitSpinner(fmt.Sprintf("Executing %s...", argv[1]), func() error {
+				c := exec.Command("liquibase", argv...)
+				c.Dir = "Database/Changelogs"
+				c.Stdout = os.Stdout
+				c.Stderr = os.Stderr
+				return c.Run()
+			})
+			if err != nil {
 				return fmt.Errorf("liquibase %s (%s) failed: %w", argv[0], argv[1], err)
 			}
 		}

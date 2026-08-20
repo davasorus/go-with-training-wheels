@@ -21,9 +21,12 @@ Example: tri add -p high MyTask`,
 		Run: func(cmd *cobra.Command, args []string) {
 			items := prepareAddItems(args, priority)
 
-			err := repo.SaveItems(items)
+			err := WaitSpinner("Saving items", func() error {
+				return repo.SaveItems(items)
+			})
+
 			if err != nil {
-				fmt.Println("Error saving items:", err)
+				fmt.Println("Error: Failed to save tasks. Please check your input and try again.")
 			}
 		},
 	}

@@ -53,6 +53,12 @@ func (m *mockStore) UpdateItemStatus(id int, done bool) error {
 	return nil
 }
 
+// DeleteItem removes an item from the mock store.
+func (m *mockStore) DeleteItem(id int) error {
+	delete(m.items, id)
+	return nil
+}
+
 func TestRepository_Mocked(t *testing.T) {
 	mockData := map[int]Todo{
 		1: {Text: "Test Item 1", Priority: 2, Position: 1, Done: false},

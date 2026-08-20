@@ -98,6 +98,19 @@ func (s *Store) UpdateItemStatus(id int, done bool) error {
 	return nil
 }
 
+// DeleteItem removes a todo from the database by its ID.
+func (s *Store) DeleteItem(id int) error {
+	res, err := s.db.Exec(`DELETE FROM todos WHERE id = $1`, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete item: %w", err)
+	}
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("no record found with id %d", id)
+	}
+	return nil
+}
+
 // InitDB initializes the database connection and returns a Store.
 func InitDB() (*Store, error) {
 	// Load environment variables from the specified path
@@ -155,7 +168,7 @@ func InitDB() (*Store, error) {
 
 		if !exists {
 			fmt.Printf("Database %s not found. Create it now...\n", cfg.DBName)
-			// Note: You cannot use "CREATE DATABASE" in a transaction block or with other SQL features.
+			// Note: You cannot use "CREATE DATABASE" in a transaction block or while other SQL features.
 			// Execute it directly.
 			_, err = tmpDB.Exec(fmt.Sprintf("CREATE DATABASE %s", cfg.DBName))
 			if err != nil {

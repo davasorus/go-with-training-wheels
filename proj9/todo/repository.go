@@ -11,6 +11,7 @@ type TodoStore interface {
 	ListItems() ([]Todo, error)
 	SaveItems(items []Todo) error
 	UpdateItemStatus(id int, done bool) error
+	DeleteItem(id int) error
 }
 
 // Repository manages access to todo records in the database.
@@ -19,8 +20,8 @@ type Repository struct {
 }
 
 // NewRepository creates a new instance of the Repository.
-func NewRepository(store TodoStore) *Repository {
-	return &Repository{store: store}
+func NewRepository(store_val TodoStore) *Repository {
+	return &Repository{store: store_val}
 }
 
 // ListItems fetches all items from the database.
@@ -50,12 +51,21 @@ func (r *Repository) UpdateItemStatus(id int, done bool) error {
 	return nil
 }
 
+// DeleteItem removes a todo from the database by its ID.
+func (r *Repository) DeleteItem(id int) error {
+	err := r.store.DeleteItem(id)
+	if err != nil {
+		return fmt.Errorf("failed to delete item: %w", err)
+	}
+	return nil
+}
+
 // TodoStoreAdapter wraps Database.Store and implements TodoStore by mapping models.Todo to todo.Todo.
 type TodoStoreAdapter struct {
 	*Database.Store
 }
 
-// NewTodoStoreAdapter creates a new instance of TodoStoreAdapter.
+// NewTodoStoreAdapter creates a new instance of the TodoStoreAdapter.
 func NewTodoStoreAdapter(store *Database.Store) *TodoStoreAdapter {
 	return &TodoStoreAdapter{Store: store}
 }
@@ -70,6 +80,7 @@ func (a *TodoStoreAdapter) ListItems() ([]Todo, error) {
 	res := make([]Todo, len(items))
 	for i, item := range items {
 		res[i] = Todo{
+			ID:       item.ID,
 			Text:     item.Text,
 			Priority: item.Priority,
 			Position: item.Position,
@@ -98,4 +109,9 @@ func (a *TodoStoreAdapter) SaveItems(items []Todo) error {
 // UpdateItemStatus updates the status of a specific todo in the database.
 func (a *TodoStoreAdapter) UpdateItemStatus(id int, done bool) error {
 	return a.Store.UpdateItemStatus(id, done)
+}
+
+// DeleteItem removes an item from the database.
+func (a *TodoStoreAdapter) DeleteItem(id int) error {
+	return a.Store.DeleteItem(id)
 }
