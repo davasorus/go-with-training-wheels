@@ -25,7 +25,18 @@ func (m Model) View() string {
 		s += "No tasks.\n"
 	}
 
-	for i, item := range m.items {
+	rows := m.visibleRows()
+	end := m.offset + rows
+	if end > len(m.items) {
+		end = len(m.items)
+	}
+
+	if m.offset > 0 {
+		s += helpStyle.Render(fmt.Sprintf("  ↑ %d more", m.offset)) + "\n"
+	}
+
+	for i := m.offset; i < end; i++ {
+		item := m.items[i]
 		label := "   "
 		if i == m.cursor {
 			label = selectionStr
@@ -57,8 +68,15 @@ func (m Model) View() string {
 		s += line + "\n"
 	}
 
-	if m.adding {
+	if end < len(m.items) {
+		s += helpStyle.Render(fmt.Sprintf("  ↓ %d more", len(m.items)-end)) + "\n"
+	}
+
+	switch m.mode {
+	case modeAdd:
 		s += "\nAdd task: " + m.input.View() + "\n"
+	case modeEdit:
+		s += "\nEdit task: " + m.input.View() + "\n"
 	}
 
 	if m.loading {
@@ -69,10 +87,10 @@ func (m Model) View() string {
 		s += "\n" + errStyle.Render("Error: "+m.err.Error()) + "\n"
 	}
 
-	if m.adding {
+	if m.mode == modeAdd || m.mode == modeEdit {
 		s += helpStyle.Render("\nenter save · esc cancel") + "\n"
 	} else {
-		s += helpStyle.Render("\n↑/k up · ↓/j down · enter/space toggle done · a add · d delete · q quit") + "\n"
+		s += helpStyle.Render("\n↑/k up · ↓/j down · enter/space toggle · a add · e edit · 1/2/3 priority · d delete · q quit") + "\n"
 	}
 
 	return s

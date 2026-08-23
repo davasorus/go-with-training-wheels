@@ -65,14 +65,15 @@ func editStore() *cmdFakeStore {
 func TestExecuteEditText(t *testing.T) {
 	store := editStore()
 	// Sorted order: High task is row 1.
-	err := executeEdit(store, "1", false, 0, "Renamed", "", nil)
+	text, err := executeEdit(store, "1", false, 0, "Renamed", "", nil)
 	require.NoError(t, err)
+	assert.Equal(t, "Renamed", text)
 	assert.Equal(t, "Renamed", store.byID(1).Text)
 }
 
 func TestExecuteEditPriorityAndDue(t *testing.T) {
 	store := editStore()
-	err := executeEdit(store, "2", true, 2, "", "2026-09-01", nil)
+	_, err := executeEdit(store, "2", true, 2, "", "2026-09-01", nil)
 	require.NoError(t, err)
 	it := store.byID(2)
 	assert.Equal(t, 2, it.Priority)
@@ -85,7 +86,7 @@ func TestExecuteEditClearDueAndTags(t *testing.T) {
 	store := &cmdFakeStore{items: []todo.Todo{
 		{ID: 1, Text: "Task", Priority: 1, Position: 1, DueDate: &now, Tags: []string{"work"}},
 	}}
-	err := executeEdit(store, "1", false, 0, "", "none", []string{"none"})
+	_, err := executeEdit(store, "1", false, 0, "", "none", []string{"none"})
 	require.NoError(t, err)
 	it := store.byID(1)
 	assert.Nil(t, it.DueDate)
@@ -93,7 +94,7 @@ func TestExecuteEditClearDueAndTags(t *testing.T) {
 }
 
 func TestExecuteEditNothingToChange(t *testing.T) {
-	err := executeEdit(editStore(), "1", false, 0, "", "", nil)
+	_, err := executeEdit(editStore(), "1", false, 0, "", "", nil)
 	assert.Error(t, err)
 }
 

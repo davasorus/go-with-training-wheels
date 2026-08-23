@@ -23,19 +23,19 @@ func editCmd(repo todo.TodoStore) *cobra.Command {
 Only the flags you provide are changed.
 Example: tri edit 2 --text "New description" -p high --due 2026-09-01
 Use --due none to remove the due date. Use --tags none to remove all tags.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				fmt.Println("Error: No number provided. Example: tri edit 1 --text \"New text\"")
-				return
-			}
-
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var edited string
 			err := WaitSpinner("Updating item", func() error {
-				return executeEdit(repo, args[0], cmd.Flags().Changed("priority"), int(priority), text, due, tags)
+				var err error
+				edited, err = executeEdit(repo, args[0], cmd.Flags().Changed("priority"), int(priority), text, due, tags)
+				return err
 			})
-
 			if err != nil {
-				fmt.Printf("Error: %v\n", err)
+				return err
 			}
+			fmt.Printf("Updated: %q\n", edited)
+			return nil
 		},
 	}
 	cmd.Flags().VarP(&priority, "priority", "p", "New priority: low, medium, or high (or 0-2).")
@@ -47,10 +47,10 @@ Use --due none to remove the due date. Use --tags none to remove all tags.`,
 
 // executeEdit applies the requested changes to the task at the given
 // list position.
-func executeEdit(r todo.TodoStore, argStr string, priorityChanged bool, priority int, text, due string, tags []string) error {
+func executeEdit(r todo.TodoStore, argStr string, priorityChanged bool, priority int, text, due string, tags []string) (string, error) {
 	items, err := r.ListItems()
 	if err != nil {
-		return fmt.Errorf("failed to load items: %w", err)
+		return "", fmt.Errorf("failed to load items: %w", err)
 	}
 
 	// Match the ordering the user saw in `tri list`.
@@ -58,7 +58,7 @@ func executeEdit(r todo.TodoStore, argStr string, priorityChanged bool, priority
 
 	idx, err := validateIndex(argStr, len(items))
 	if err != nil {
-		return err
+		return "", err
 	}
 	item := items[idx-1]
 
@@ -80,7 +80,7 @@ func executeEdit(r todo.TodoStore, argStr string, priorityChanged bool, priority
 		} else {
 			d, err := parseDueDate(due)
 			if err != nil {
-				return err
+				return "", err
 			}
 			item.DueDate = d
 		}
@@ -97,8 +97,11 @@ func executeEdit(r todo.TodoStore, argStr string, priorityChanged bool, priority
 	}
 
 	if !changed {
-		return fmt.Errorf("nothing to change: provide at least one of --text, --priority, --due, --tags")
+		return "", fmt.Errorf("nothing to change: provide at least one of --text, --priority, --due, --tags")
 	}
 
-	return r.UpdateItem(item)
+	if err := r.UpdateItem(item); err != nil {
+		return "", err
+	}
+	return item.Text, nil
 }

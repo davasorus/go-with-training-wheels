@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"fmt"
-	"log/slog"
 
 	"github.com/davasorus/tri/todo"
 	"github.com/spf13/cobra"
@@ -13,23 +12,45 @@ import (
 
 // clearCmd returns the command to purge all completed tasks.
 func clearCmd(repo todo.TodoStore) *cobra.Command {
-	return &cobra.Command{
+	var yes bool
+	cmd := &cobra.Command{
 		Use:     "clear",
 		Aliases: []string{"clr"},
 		Short:   "Purge all items marked as 'Done'.",
 		Long:    `Remove all tasks from the database that are already marked as completed.`,
-		Run: func(cmd *cobra.Command, args []string) {
-			err := WaitSpinner("Clearing completed tasks", func() error {
+		RunE: func(cmd *cobra.Command, args []string) error {
+			items, err := repo.ListItems()
+			if err != nil {
+				return fmt.Errorf("failed to load items: %w", err)
+			}
+			doneCount := 0
+			for _, item := range items {
+				if item.Done {
+					doneCount++
+				}
+			}
+			if doneCount == 0 {
+				fmt.Println("Nothing to clear: no completed tasks.")
+				return nil
+			}
+
+			if !yes && !confirm(fmt.Sprintf("Delete %d completed task(s)?", doneCount)) {
+				fmt.Println("Canceled.")
+				return nil
+			}
+
+			err = WaitSpinner("Clearing completed tasks", func() error {
 				return executeClear(repo)
 			})
-
 			if err != nil {
-				fmt.Println("Error: Failed to clear completed items.")
-				return
+				return err
 			}
-			fmt.Println("Successfully cleared all completed items")
+			fmt.Printf("Cleared %d completed task(s).\n", doneCount)
+			return nil
 		},
 	}
+	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "Clear without asking for confirmation.")
+	return cmd
 }
 
 // executeClear handles the logic for removing all finished tasks.
@@ -41,10 +62,8 @@ func executeClear(r todo.TodoStore) error {
 
 	for _, item := range items {
 		if item.Done {
-			err := r.DeleteItem(item.ID)
-			if err != nil {
-				slog.Error("Failed to delete completed item", "id", item.ID, "error", err)
-				// Continue with other items even if one fails
+			if err := r.DeleteItem(item.ID); err != nil {
+				return fmt.Errorf("failed to delete completed item %d: %w", item.ID, err)
 			}
 		}
 	}

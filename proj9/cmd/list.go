@@ -129,12 +129,13 @@ func applyFilter(items []todo.Todo, filter func(todo.Todo) bool) []todo.Todo {
 	return kept
 }
 
-func runTUI(repo todo.TodoStore, items []todo.Todo, filter func(todo.Todo) bool) {
+func runTUI(repo todo.TodoStore, items []todo.Todo, filter func(todo.Todo) bool) error {
 	m := ui.NewModel(repo, items, filter)
-	p := tea.NewProgram(m)
+	p := tea.NewProgram(m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
-		fmt.Printf("Error running TUI: %v\n", err)
+		return fmt.Errorf("failed to run the interactive view: %w", err)
 	}
+	return nil
 }
 
 // listCmd returns the command to list tasks.
@@ -149,14 +150,13 @@ func listCmd(repo todo.TodoStore) *cobra.Command {
 		Short: "List all tasks.",
 		Long: `Display a table of tasks. 
 Example: tri list --done`,
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			items, err := repo.ListItems()
 			if err != nil {
-				fmt.Printf("Error: Failed to load items from the database: %v\n", err)
 				if strings.Contains(err.Error(), "does not exist") {
-					fmt.Println("Hint: the database schema may be out of date. Run 'tri migrateDb'.")
+					return fmt.Errorf("%w\nHint: the database schema may be out of date. Run 'tri migrateDb'", err)
 				}
-				return
+				return err
 			}
 
 			sort.Sort(todo.ByPri(items))
@@ -165,11 +165,11 @@ Example: tri list --done`,
 			filteredItems := applyFilter(items, filter)
 
 			if interactiveOpt {
-				runTUI(repo, filteredItems, filter)
-				return
+				return runTUI(repo, filteredItems, filter)
 			}
 
 			renderList(os.Stdout, filteredItems, doneOpt, nearOpt, queryOpt)
+			return nil
 		},
 	}
 

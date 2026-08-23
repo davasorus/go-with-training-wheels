@@ -53,11 +53,11 @@ func addCmd(repo todo.TodoStore) *cobra.Command {
 		Short: "Add a new task with priority.",
 		Long: `Add a new task to the system.
 Example: tri add -p high --due tomorrow "Fix the build"`,
-		Run: func(cmd *cobra.Command, args []string) {
+		Args: cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
 			dueDate, err := parseDueDate(due)
 			if err != nil {
-				fmt.Printf("Error: %v\n", err)
-				return
+				return err
 			}
 
 			items := prepareAddItems(args, int(priority), dueDate, tags)
@@ -65,10 +65,16 @@ Example: tri add -p high --due tomorrow "Fix the build"`,
 			err = WaitSpinner("Saving items", func() error {
 				return repo.SaveItems(items)
 			})
-
 			if err != nil {
-				fmt.Println("Error: Failed to save tasks. Please check your input and try again.")
+				return fmt.Errorf("failed to save tasks: %w", err)
 			}
+
+			if len(items) == 1 {
+				fmt.Printf("Added: %q\n", items[0].Text)
+			} else {
+				fmt.Printf("Added %d tasks.\n", len(items))
+			}
+			return nil
 		},
 	}
 	cmd.Flags().VarP(&priority, "priority", "p", "Priority of the task: low, medium, or high (or 0-2).")

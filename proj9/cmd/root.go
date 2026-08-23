@@ -11,8 +11,9 @@ import (
 
 // rootCmd represents the base command of the tri tool.
 var rootCmd = &cobra.Command{
-	Use:   "tri",
-	Short: "A brief description of your application",
+	Use:          "tri",
+	SilenceUsage: true,
+	Short:        "A brief description of your application",
 	Long: `A longer description of the application.
 Example:
 tri add -p high task name`,

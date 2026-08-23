@@ -21,14 +21,15 @@ number from 'tri list'. The second argument is "up" or "down".
 Movement is within the same priority and done state.
 Example: tri move 3 up`,
 		Args: cobra.ExactArgs(2),
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			err := WaitSpinner("Moving item", func() error {
 				return executeMove(repo, args[0], args[1])
 			})
-
 			if err != nil {
-				fmt.Printf("Error: %v\n", err)
+				return err
 			}
+			fmt.Printf("Moved task %s %s.\n", args[0], args[1])
+			return nil
 		},
 	}
 }

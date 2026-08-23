@@ -83,12 +83,18 @@ A due date in the past shows in red with an "(overdue)" mark. The list is sorted
 
 Caution: the `done` and `delete` commands always count against the full list. Run `tri list` with no filter flags to see the correct numbers before you use `done` or `delete`.
 
+The interactive view opens in a full screen and restores your terminal on exit. Long lists scroll with the cursor.
+
 In the interactive view:
 - Use the arrow keys or `j` / `k` to move.
 - Press `Enter` or `Space` to toggle the done state of the selected task.
 - Press `a` to add a new task. Type the text, then press `Enter` to save or `Esc` to cancel.
+- Press `e` to edit the text of the selected task.
+- Press `1`, `2`, or `3` to set the priority of the selected task to Low, Medium, or High.
 - Press `d` to delete the selected task.
 - Press `q` or `Ctrl+C` to quit.
+
+After a change, the cursor stays on the same task, even when the list order changes.
 
 The interactive view reloads the tasks after each change. Filters from the command line stay in effect.
 
@@ -141,19 +147,27 @@ Writes all tasks as a JSON array to standard output. Each task includes its crea
 
 ```
 ./tri delete 1
-./tri del 1
+./tri del 1 --yes
 ```
 
-The argument is the position from `tri list`. If the number is larger than the list, the tool treats it as a raw database ID.
+The argument is the position from `tri list`. If the number is larger than the list, the tool treats it as a raw database ID. The command shows the task text and asks for confirmation. Use `-y` / `--yes` to skip the question, for example in scripts.
 
 ### Clear completed tasks
 
 ```
 ./tri clear
-./tri clr
+./tri clr --yes
 ```
 
-This command removes all tasks that are marked as done.
+This command removes all tasks that are marked as done. It shows the count and asks for confirmation. Use `-y` / `--yes` to skip the question.
+
+## Exit codes and scripting
+
+Commands return exit code `0` on success and `1` on failure. Error messages go to standard error. This makes the tool safe to use in scripts:
+
+```
+./tri done 3 && ./tri export | jq '.[] | select(.done)'
+```
 
 ## Shell completion
 
