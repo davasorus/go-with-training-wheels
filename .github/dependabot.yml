@@ -36,3 +36,16 @@ updates:
     directory: /proj9
     schedule:
       interval: daily
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      actions-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    labels: ["deps", "ci"]
