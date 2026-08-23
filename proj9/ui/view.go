@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/davasorus/tri/todo"
 )
 
 var (
@@ -12,7 +11,7 @@ var (
 	selectionStr = " > "
 )
 
-func Render(m Model) string {
+func (m Model) View() string {
 	var s string
 	s += titleStyle.Render("Select a task to focus on:") + "\n"
 

@@ -12,7 +12,9 @@ import (
 	"text/tabwriter"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/davasorus/tri/ui"
 	"github.com/davasorus/tri/todo"
 	"github.com/spf13/cobra"
 )
@@ -74,7 +76,8 @@ func renderList(w io.Writer, items []todo.Todo, showOnlyDone bool, nearDays int,
 
 func runTUI(items []todo.Todo) {
 	m := ui.NewModel(items)
-	if err := tea.Start(m); err != nil {
+	p := tea.NewProgram(m)
+	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error running TUI: %v\n", err)
 	}
 }
@@ -84,6 +87,7 @@ func listCmd(repo todo.TodoStore) *cobra.Command {
 	var queryOpt string
 	var doneOpt bool
 	var nearOpt int
+	var interactiveOpt bool
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all tasks.",

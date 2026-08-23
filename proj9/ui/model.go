@@ -1,7 +1,8 @@
 package ui
 
 import (
-	"github.com/charmbracelet/bubbletea"
+	tea "github.com/charmbracelet/bubbletea"
+
 	"github.com/davasorus/tri/todo"
 )
 
@@ -20,26 +21,26 @@ func NewModel(items []todo.Todo) Model {
 	}
 }
 
-func (m Model) Init() bubbletea.Cmd {
+func (m Model) Init() tea.Cmd {
 	return nil
 }
 
-func (m Model) Update(msg bubbletea.Msg) (Model, bubbletea.Cmd) {
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case bubbletea.KeyMsg:
+	case tea.KeyMsg:
 		switch msg.String() {
-		case "up", "keydown":
+		case "up", "k":
 			if m.cursor > 0 {
 				m.cursor--
 			}
-		case "down", "keyright":
+		case "down", "j":
 			if m.cursor < len(m.items)-1 {
 				m.cursor++
 			}
-		case "enter", "keyenter":
+		case "enter":
 			// Handle selection
-		case "q", "ctrl-c":
-			return m, bubbletea.Quit
+		case "q", "ctrl+c":
+			return m, tea.Quit
 		}
 	}
 	return m, nil
