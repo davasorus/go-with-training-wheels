@@ -38,7 +38,7 @@ func (s *Store) ListItems() ([]models.Todo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to query items: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var items []models.Todo
 	for rows.Next() {
@@ -156,7 +156,7 @@ func InitDB() (*Store, error) {
 		if errTmp != nil {
 			return nil, fmt.Errorf("failed to open administrative connection: %w", errTmp)
 		}
-		defer tmpDB.Close()
+		defer func() { _ = tmpDB.Close() }()
 
 		// Check if the database exists
 		var exists bool

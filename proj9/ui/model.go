@@ -9,9 +9,8 @@ import (
 // Model is the bubbletea model for the interactive task list.
 type Model struct {
 	items   []todo.Todo
-	cursor  int
-	loading bool
-	err     error
+	cursor int
+	err    error
 }
 
 func NewModel(items []todo.Todo) Model {

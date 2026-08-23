@@ -33,6 +33,8 @@ func Execute() {
 	rootCmd.AddCommand(addCmd(repo))
 	rootCmd.AddCommand(listCmd(repo))
 	rootCmd.AddCommand(doneCmd(repo))
+	rootCmd.AddCommand(clearCmd(repo))
+	rootCmd.AddCommand(deleteCmd(repo))
 	rootCmd.AddCommand(NewMigrateDbCmd())
 }
 

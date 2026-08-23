@@ -22,8 +22,8 @@ import (
 // renderList outputs the list of items to the provided writer.
 func renderList(w io.Writer, items []todo.Todo, showOnlyDone bool, nearDays int, queryOpt string) {
 	tw := tabwriter.NewWriter(w, 3, 0, 1, ' ', 0)
-	fmt.Fprintln(tw, "ID", "Priority", "Task", "Status", "Due Date")
-	fmt.Fprintln(tw)
+	_, _ = fmt.Fprintln(tw, "ID", "Priority", "Task", "Status", "Due Date")
+	_, _ = fmt.Fprintln(tw)
 	now := time.Now()
 	for _, i := range items {
 		if !showOnlyDone || i.Done {
@@ -68,10 +68,12 @@ func renderList(w io.Writer, items []todo.Todo, showOnlyDone bool, nearDays int,
 				statusStyle = statusStyle.Foreground(lipgloss.Color("3"))
 			}
 
-			fmt.Fprintln(tw, style.Render(taskLabel), i.PrettyP(), i.Text, statusStyle.Render(status), dateStr)
+			_, _ = fmt.Fprintln(tw, style.Render(taskLabel), i.PrettyP(), i.Text, statusStyle.Render(status), dateStr)
 		}
 	}
-	tw.Flush()
+	if err := tw.Flush(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error rendering list: %v\n", err)
+	}
 }
 
 func runTUI(items []todo.Todo) {
