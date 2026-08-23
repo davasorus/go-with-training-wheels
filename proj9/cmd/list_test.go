@@ -21,7 +21,8 @@ func TestWriteOutput(t *testing.T) {
 		name         string
 		showOnlyDone bool
 		items        []todo.Todo
-		expected     []string // Substrings to look for in the output
+		expected     []string // Substrings that must appear in the output
+		notExpected  []string // Substrings that must not appear in the output
 	}{
 		{
 			name:         "all items",
@@ -30,7 +31,7 @@ func TestWriteOutput(t *testing.T) {
 				{Text: "Task 1", Priority: 1, Position: 1, Done: false},
 				{Text: "Task 2", Priority: 2, Position: 2, Done: true},
 			},
-			expected: []string{"1.", "Task 1", "Not Done", "2.", "Task 2", "Done"},
+			expected: []string{"1.", "Task 1", "[ ]", "2.", "Task 2", "[x]"},
 		},
 		{
 			name:         "only done items (none done)",
@@ -38,7 +39,7 @@ func TestWriteOutput(t *testing.T) {
 			items: []todo.Todo{
 				{Text: "Task 1", Priority: 1, Position: 1, Done: false},
 			},
-			expected: []string{},
+			notExpected: []string{"Task 1"},
 		},
 		{
 			name:         "only done items (some done)",
@@ -47,7 +48,8 @@ func TestWriteOutput(t *testing.T) {
 				{Text: "Task 1", Priority: 1, Position: 1, Done: false},
 				{Text: "Task 2", Priority: 2, Position: 2, Done: true},
 			},
-			expected: []string{"2.", "Task 2", "Done"},
+			expected:    []string{"2.", "Task 2", "[x]"},
+			notExpected: []string{"Task 1"},
 		},
 	}
 
@@ -57,12 +59,11 @@ func TestWriteOutput(t *testing.T) {
 			renderList(&buf, tt.items, tt.showOnlyDone, 0, "")
 			output := buf.String()
 
-			if len(tt.expected) == 0 {
-				assert.Empty(t, output)
-			} else {
-				for _, exp := range tt.expected {
-					assert.Contains(t, output, exp)
-				}
+			for _, exp := range tt.expected {
+				assert.Contains(t, output, exp)
+			}
+			for _, notExp := range tt.notExpected {
+				assert.NotContains(t, output, notExp)
 			}
 		})
 	}

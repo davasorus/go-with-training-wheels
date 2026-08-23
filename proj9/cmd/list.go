@@ -14,8 +14,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/davasorus/tri/ui"
 	"github.com/davasorus/tri/todo"
+	"github.com/davasorus/tri/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -76,8 +76,8 @@ func renderList(w io.Writer, items []todo.Todo, showOnlyDone bool, nearDays int,
 	}
 }
 
-func runTUI(items []todo.Todo) {
-	m := ui.NewModel(items)
+func runTUI(repo todo.TodoStore, items []todo.Todo) {
+	m := ui.NewModel(repo, items)
 	p := tea.NewProgram(m)
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error running TUI: %v\n", err)
@@ -142,7 +142,7 @@ Example: tri list --done`,
 			}
 
 			if interactiveOpt {
-				runTUI(filteredItems)
+				runTUI(repo, filteredItems)
 				return
 			}
 

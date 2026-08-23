@@ -6,6 +6,7 @@ package cmd
 import (
 	"fmt"
 	"log/slog"
+	"sort"
 
 	"github.com/davasorus/tri/todo"
 	"github.com/spf13/cobra"
@@ -48,12 +49,15 @@ func executeUpdate(r todo.TodoStore, argStr string) error {
 		return fmt.Errorf("failed to load items: %w", err)
 	}
 
+	// Match the ordering the user saw in `tri list`.
+	sort.Sort(todo.ByPri(items))
+
 	idx, err := validateIndex(argStr, len(items))
 	if err != nil {
 		return err
 	}
 
-	err = r.UpdateItemStatus(idx-1, true)
+	err = r.UpdateItemStatus(items[idx-1].ID, true)
 	if err != nil {
 		return fmt.Errorf("failed to update item: %w", err)
 	}

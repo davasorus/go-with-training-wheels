@@ -160,8 +160,7 @@ func InitDB() (*Store, error) {
 
 		// Check if the database exists
 		var exists bool
-		query := fmt.Sprintf(`SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname='%s')`, cfg.DBName)
-		err = tmpDB.QueryRow(query).Scan(&exists)
+		err = tmpDB.QueryRow(`SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = $1)`, cfg.DBName).Scan(&exists)
 		if err != nil {
 			return nil, fmt.Errorf("failed to check if database exists: %w", err)
 		}
@@ -170,7 +169,7 @@ func InitDB() (*Store, error) {
 			fmt.Printf("Database %s not found. Create it now...\n", cfg.DBName)
 			// Note: You cannot use "CREATE DATABASE" in a transaction block or while other SQL features.
 			// Execute it directly.
-			_, err = tmpDB.Exec(fmt.Sprintf("CREATE DATABASE %s", cfg.DBName))
+			_, err = tmpDB.Exec(fmt.Sprintf("CREATE DATABASE %q", cfg.DBName))
 			if err != nil {
 				return nil, fmt.Errorf("failed to create database: %w", err)
 			}

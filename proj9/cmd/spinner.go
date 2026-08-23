@@ -5,33 +5,36 @@ import (
 	"time"
 )
 
-// Spinner prints a spinning character to the terminal.
-func Spinner(message string) {
-	spinner := []string{"|", "/", "-", "\\"}
+// Spinner prints a spinning character to the terminal until stop is closed.
+func Spinner(message string, stop <-chan struct{}) {
+	frames := []string{"|", "/", "-", "\\"}
 	i := 0
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
 	for {
-		fmt.Printf("\r%s %s", message, spinner[i%4])
-		time.Sleep(100 * time.Millisecond)
-		i++
+		select {
+		case <-stop:
+			return
+		case <-ticker.C:
+			fmt.Printf("\r%s %s", message, frames[i%4])
+			i++
+		}
 	}
 }
 
 // WaitSpinner is a helper to show progress while an action is performed.
 func WaitSpinner(message string, action func() error) error {
-	fmt.Printf("%s... ", message)
-
-	// Run spinner in background if it's a potentially long-running task.
-	go Spinner(message)
+	stop := make(chan struct{})
+	go Spinner(message, stop)
 
 	err := action()
+	close(stop)
 
-	// Clear the line after completion to remove the spinner and show status.
-	fmt.Printf("\r%s %s\n", message, func() string {
-		if err != nil {
-			return "failed"
-		}
-		return "done"
-	}())
+	status := "done"
+	if err != nil {
+		status = "failed"
+	}
+	fmt.Printf("\r%s... %s\n", message, status)
 
 	return err
 }

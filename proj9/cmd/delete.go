@@ -6,6 +6,7 @@ package cmd
 import (
 	"fmt"
 	"log/slog"
+	"sort"
 	"strconv"
 
 	"github.com/davasorus/tri/todo"
@@ -59,12 +60,19 @@ func executeDelete(r todo.TodoStore, argStr string) error {
 		return fmt.Errorf("invalid input: %s is not a number", argStr)
 	}
 
-	items, _ := r.ListItems() // Error handling skipped for simplicity in this snippet as it's only used for length check
+	items, err := r.ListItems()
+	if err != nil {
+		return fmt.Errorf("failed to load items: %w", err)
+	}
+
+	// Match the ordering the user saw in `tri list`.
+	sort.Sort(todo.ByPri(items))
 
 	var idToDelete int
 	if val >= 1 && val <= len(items) {
-		idToDelete = val - 1
+		idToDelete = items[val-1].ID
 	} else {
+		// Fall back to treating the value as a raw database ID.
 		idToDelete = val
 	}
 

@@ -37,8 +37,3 @@ func Execute() {
 	rootCmd.AddCommand(deleteCmd(repo))
 	rootCmd.AddCommand(NewMigrateDbCmd())
 }
-
-func init() {
-	// Define global flags here.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
