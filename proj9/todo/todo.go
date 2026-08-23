@@ -4,17 +4,31 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"strings"
 	"time"
 )
 
 // Todo represents a single task in the list.
 type Todo struct {
-	ID       int
-	Text     string
-	Priority int
-	Position int
-	Done     bool
-	DueDate  *time.Time
+	ID          int        `json:"id"`
+	Text        string     `json:"text"`
+	Priority    int        `json:"priority"`
+	Position    int        `json:"position"`
+	Done        bool       `json:"done"`
+	DueDate     *time.Time `json:"due_date,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+	Tags        []string   `json:"tags,omitempty"`
+}
+
+// HasTag reports whether the task carries the given tag (case-insensitive).
+func (i *Todo) HasTag(tag string) bool {
+	for _, t := range i.Tags {
+		if strings.EqualFold(t, tag) {
+			return true
+		}
+	}
+	return false
 }
 
 // ByPri is a type for sorting tasks by priority and position.

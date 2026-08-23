@@ -27,7 +27,7 @@ Example: tri do 1`,
 			}
 
 			err := WaitSpinner("Marking as done", func() error {
-				return executeUpdate(repo, args[0])
+				return executeUpdate(repo, args[0], true)
 			})
 
 			if err != nil {
@@ -42,8 +42,34 @@ func init() {
 	// Note: doneCmd is now added in root.go by passing the repository.
 }
 
-// executeUpdate handles the logic for finding and marking a task as completed.
-func executeUpdate(r todo.TodoStore, argStr string) error {
+// undoCmd returns the command to mark a task as not completed.
+func undoCmd(repo todo.TodoStore) *cobra.Command {
+	return &cobra.Command{
+		Use:     "undo",
+		Aliases: []string{"undone"},
+		Short:   "Mark a task as not completed.",
+		Long: `Mark a done task as not done, using its number from 'tri list'.
+Example: tri undo 1`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 {
+				slog.Error("No index provided")
+				return
+			}
+
+			err := WaitSpinner("Marking as not done", func() error {
+				return executeUpdate(repo, args[0], false)
+			})
+
+			if err != nil {
+				fmt.Println("Error: Failed to update the task. Please ensure you provided a valid index.")
+				return
+			}
+		},
+	}
+}
+
+// executeUpdate handles the logic for finding a task and setting its done state.
+func executeUpdate(r todo.TodoStore, argStr string, done bool) error {
 	items, err := r.ListItems()
 	if err != nil {
 		return fmt.Errorf("failed to load items: %w", err)
@@ -57,7 +83,7 @@ func executeUpdate(r todo.TodoStore, argStr string) error {
 		return err
 	}
 
-	err = r.UpdateItemStatus(items[idx-1].ID, true)
+	err = r.UpdateItemStatus(items[idx-1].ID, done)
 	if err != nil {
 		return fmt.Errorf("failed to update item: %w", err)
 	}

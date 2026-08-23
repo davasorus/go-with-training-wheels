@@ -10,6 +10,7 @@ import (
 type TodoStore interface {
 	ListItems() ([]Todo, error)
 	SaveItems(items []Todo) error
+	UpdateItem(item Todo) error
 	UpdateItemStatus(id int, done bool) error
 	DeleteItem(id int) error
 }
@@ -38,6 +39,14 @@ func (r *Repository) SaveItems(items []Todo) error {
 	err := r.store.SaveItems(items)
 	if err != nil {
 		return fmt.Errorf("failed to save items: %w", err)
+	}
+	return nil
+}
+
+// UpdateItem updates the editable fields of a todo.
+func (r *Repository) UpdateItem(item Todo) error {
+	if err := r.store.UpdateItem(item); err != nil {
+		return fmt.Errorf("failed to update item: %w", err)
 	}
 	return nil
 }
@@ -80,12 +89,15 @@ func (a *TodoStoreAdapter) ListItems() ([]Todo, error) {
 	res := make([]Todo, len(items))
 	for i, item := range items {
 		res[i] = Todo{
-			ID:       item.ID,
-			Text:     item.Text,
-			Priority: item.Priority,
-			Position: item.Position,
-			Done:     item.Done,
-			DueDate:  item.DueDate,
+			ID:          item.ID,
+			Text:        item.Text,
+			Priority:    item.Priority,
+			Position:    item.Position,
+			Done:        item.Done,
+			DueDate:     item.DueDate,
+			CreatedAt:   item.CreatedAt,
+			CompletedAt: item.CompletedAt,
+			Tags:        item.Tags,
 		}
 	}
 	return res, nil
@@ -101,9 +113,22 @@ func (a *TodoStoreAdapter) SaveItems(items []Todo) error {
 			Position: item.Position,
 			Done:     item.Done,
 			DueDate:  item.DueDate,
+			Tags:     item.Tags,
 		}
 	}
 	return a.Store.SaveItems(mItems)
+}
+
+// UpdateItem updates the editable fields of a todo in the database.
+func (a *TodoStoreAdapter) UpdateItem(item Todo) error {
+	return a.Store.UpdateItem(models.Todo{
+		ID:       item.ID,
+		Text:     item.Text,
+		Priority: item.Priority,
+		Position: item.Position,
+		DueDate:  item.DueDate,
+		Tags:     item.Tags,
+	})
 }
 
 // UpdateItemStatus updates the status of a specific todo in the database.

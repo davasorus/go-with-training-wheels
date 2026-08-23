@@ -22,7 +22,7 @@ import (
 // renderList outputs the list of items to the provided writer.
 func renderList(w io.Writer, items []todo.Todo, showOnlyDone bool, nearDays int, queryOpt string) {
 	tw := tabwriter.NewWriter(w, 3, 0, 1, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID", "Priority", "Task", "Status", "Due Date")
+	_, _ = fmt.Fprintln(tw, "ID", "Priority", "Task", "Tags", "Status", "Due Date")
 	_, _ = fmt.Fprintln(tw)
 	now := time.Now()
 	for idx, i := range items {
@@ -30,6 +30,9 @@ func renderList(w io.Writer, items []todo.Todo, showOnlyDone bool, nearDays int,
 			dateStr := ""
 			if i.DueDate != nil {
 				dateStr = i.DueDate.Format("2006-01-02")
+				if !i.Done && i.DueDate.Before(now) {
+					dateStr = lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Render(dateStr + " (overdue)")
+				}
 				if nearDays > 0 {
 					daysUntil := i.DueDate.Sub(now).Hours() / 24
 					if daysUntil < 0 || daysUntil > float64(nearDays) {
@@ -68,7 +71,8 @@ func renderList(w io.Writer, items []todo.Todo, showOnlyDone bool, nearDays int,
 				statusStyle = statusStyle.Foreground(lipgloss.Color("3"))
 			}
 
-			_, _ = fmt.Fprintln(tw, style.Render(taskLabel), i.PrettyP(), i.Text, statusStyle.Render(status), dateStr)
+			tagStr := strings.Join(i.Tags, ",")
+			_, _ = fmt.Fprintln(tw, style.Render(taskLabel), i.PrettyP(), i.Text, tagStr, statusStyle.Render(status), dateStr)
 		}
 	}
 	if err := tw.Flush(); err != nil {
@@ -78,8 +82,8 @@ func renderList(w io.Writer, items []todo.Todo, showOnlyDone bool, nearDays int,
 
 // buildFilter composes the list filters into one predicate.
 // It returns nil when no filter flags are active.
-func buildFilter(doneOpt bool, nearOpt int, queryOpt string) func(todo.Todo) bool {
-	if !doneOpt && nearOpt <= 0 && queryOpt == "" {
+func buildFilter(doneOpt bool, nearOpt int, queryOpt string, tagOpts []string) func(todo.Todo) bool {
+	if !doneOpt && nearOpt <= 0 && queryOpt == "" && len(tagOpts) == 0 {
 		return nil
 	}
 	now := time.Now()
@@ -100,6 +104,11 @@ func buildFilter(doneOpt bool, nearOpt int, queryOpt string) func(todo.Todo) boo
 			q := strings.ToLower(queryOpt)
 			if !strings.Contains(strings.ToLower(itm.Label()), q) &&
 				!strings.Contains(strings.ToLower(itm.Text), q) {
+				return false
+			}
+		}
+		for _, tag := range tagOpts {
+			if !itm.HasTag(tag) {
 				return false
 			}
 		}
@@ -134,6 +143,7 @@ func listCmd(repo todo.TodoStore) *cobra.Command {
 	var doneOpt bool
 	var nearOpt int
 	var interactiveOpt bool
+	var tagOpts []string
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all tasks.",
@@ -142,13 +152,16 @@ Example: tri list --done`,
 		Run: func(cmd *cobra.Command, args []string) {
 			items, err := repo.ListItems()
 			if err != nil {
-				fmt.Println("Error: Failed to load items from the database.")
+				fmt.Printf("Error: Failed to load items from the database: %v\n", err)
+				if strings.Contains(err.Error(), "does not exist") {
+					fmt.Println("Hint: the database schema may be out of date. Run 'tri migrateDb'.")
+				}
 				return
 			}
 
 			sort.Sort(todo.ByPri(items))
 
-			filter := buildFilter(doneOpt, nearOpt, queryOpt)
+			filter := buildFilter(doneOpt, nearOpt, queryOpt, tagOpts)
 			filteredItems := applyFilter(items, filter)
 
 			if interactiveOpt {
@@ -163,6 +176,7 @@ Example: tri list --done`,
 	cmd.Flags().BoolVar(&doneOpt, "done", false, "Show only completed items")
 	cmd.Flags().IntVarP(&nearOpt, "near", "n", 0, "Show tasks due within the next 7 days (default: all)")
 	cmd.Flags().StringVarP(&queryOpt, "query", "q", "", "Filter items by title or description")
-	cmd.Flags().BoolVar(&interactiveOpt, "interactive", false, "Start in interactive mode (TUI)")
+	cmd.Flags().BoolVarP(&interactiveOpt, "interactive", "i", false, "Start in interactive mode (TUI)")
+	cmd.Flags().StringSliceVar(&tagOpts, "tag", nil, "Show only tasks with this tag. Repeat the flag to require more tags.")
 	return cmd
 }

@@ -28,7 +28,23 @@ func (f *fakeStore) ListItems() ([]todo.Todo, error) {
 	return out, nil
 }
 
-func (f *fakeStore) SaveItems(items []todo.Todo) error { return nil }
+func (f *fakeStore) SaveItems(items []todo.Todo) error {
+	for _, it := range items {
+		it.ID = len(f.items) + 100
+		f.items = append(f.items, it)
+	}
+	return nil
+}
+
+func (f *fakeStore) UpdateItem(item todo.Todo) error {
+	for i := range f.items {
+		if f.items[i].ID == item.ID {
+			f.items[i] = item
+			return nil
+		}
+	}
+	return errors.New("not found")
+}
 
 func (f *fakeStore) UpdateItemStatus(id int, done bool) error {
 	if f.updateErr != nil {
@@ -261,4 +277,54 @@ func TestViewRendersStatusAndHelp(t *testing.T) {
 func TestViewEmptyList(t *testing.T) {
 	m := newTestModel(&fakeStore{}, nil)
 	assert.Contains(t, m.View(), "No tasks.")
+}
+
+func TestAddMode(t *testing.T) {
+	store := &fakeStore{items: testItems()}
+	m := newTestModel(store, nil)
+
+	// 'a' enters input mode.
+	m, _ = update(t, m, key("a"))
+	assert.True(t, m.adding)
+
+	// Typed runes go to the input, not the list.
+	m, _ = update(t, m, key("x"))
+	assert.Equal(t, "x", m.input.Value())
+	assert.Equal(t, 0, m.cursor, "list keys must not fire in input mode")
+
+	// Enter saves, exits input mode, and triggers a refresh.
+	m, cmd := update(t, m, key("enter"))
+	assert.False(t, m.adding)
+	assert.True(t, m.loading)
+	require.NotNil(t, cmd)
+
+	msg := cmd()
+	refresh, ok := msg.(refreshMsg)
+	require.True(t, ok)
+	require.NoError(t, refresh.err)
+
+	m, _ = update(t, m, refresh)
+	assert.Len(t, m.items, 4, "new task must appear after refresh")
+}
+
+func TestAddModeEscCancels(t *testing.T) {
+	m := newTestModel(&fakeStore{items: testItems()}, nil)
+
+	m, _ = update(t, m, key("a"))
+	m, _ = update(t, m, key("x"))
+	m, cmd := update(t, m, tea.KeyMsg{Type: tea.KeyEsc})
+	assert.False(t, m.adding)
+	assert.Nil(t, cmd)
+	assert.Empty(t, m.input.Value(), "esc must clear the input")
+	assert.Len(t, m.items, 3)
+}
+
+func TestAddModeEmptyInputIsNoOp(t *testing.T) {
+	m := newTestModel(&fakeStore{items: testItems()}, nil)
+
+	m, _ = update(t, m, key("a"))
+	m, cmd := update(t, m, key("enter"))
+	assert.False(t, m.adding)
+	assert.False(t, m.loading)
+	assert.Nil(t, cmd, "saving empty text must be a no-op")
 }

@@ -47,6 +47,7 @@ func (p *priorityFlag) Type() string { return "priority" }
 func addCmd(repo todo.TodoStore) *cobra.Command {
 	var priority priorityFlag
 	var due string
+	var tags []string
 	cmd := &cobra.Command{
 		Use:   "add",
 		Short: "Add a new task with priority.",
@@ -59,7 +60,7 @@ Example: tri add -p high --due tomorrow "Fix the build"`,
 				return
 			}
 
-			items := prepareAddItems(args, int(priority), dueDate)
+			items := prepareAddItems(args, int(priority), dueDate, tags)
 
 			err = WaitSpinner("Saving items", func() error {
 				return repo.SaveItems(items)
@@ -72,6 +73,7 @@ Example: tri add -p high --due tomorrow "Fix the build"`,
 	}
 	cmd.Flags().VarP(&priority, "priority", "p", "Priority of the task: low, medium, or high (or 0-2).")
 	cmd.Flags().StringVarP(&due, "due", "d", "", `Due date: YYYY-MM-DD, "today", or "tomorrow".`)
+	cmd.Flags().StringSliceVar(&tags, "tag", nil, "Tag for the task. Repeat the flag for more tags.")
 	return cmd
 }
 
@@ -100,10 +102,10 @@ func parseDueDate(s string) (*time.Time, error) {
 	return &t, nil
 }
 
-func prepareAddItems(args []string, priority int, dueDate *time.Time) []todo.Todo {
+func prepareAddItems(args []string, priority int, dueDate *time.Time, tags []string) []todo.Todo {
 	items := make([]todo.Todo, 0, len(args))
 	for i, arg := range args {
-		item := todo.Todo{Text: arg, DueDate: dueDate}
+		item := todo.Todo{Text: arg, DueDate: dueDate, Tags: tags}
 		item.SetPriority(priority)
 		item.Position = i + 1
 		items = append(items, item)

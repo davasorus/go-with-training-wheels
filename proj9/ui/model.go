@@ -2,7 +2,9 @@ package ui
 
 import (
 	"sort"
+	"strings"
 
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/davasorus/tri/todo"
@@ -21,6 +23,8 @@ type Model struct {
 	filter  func(todo.Todo) bool
 	cursor  int
 	loading bool
+	adding  bool
+	input   textinput.Model
 	err     error
 }
 
@@ -28,10 +32,15 @@ type Model struct {
 // items are shown. A non-nil filter is re-applied on every refresh so
 // command-line filters survive toggles and deletes.
 func NewModel(repo todo.TodoStore, items []todo.Todo, filter func(todo.Todo) bool) Model {
+	input := textinput.New()
+	input.Placeholder = "New task text"
+	input.CharLimit = 200
+
 	return Model{
 		repo:   repo,
 		items:  items,
 		filter: filter,
+		input:  input,
 	}
 }
 
@@ -70,6 +79,17 @@ func (m Model) toggleCurrent() tea.Cmd {
 	}
 }
 
+// addItem saves a new task with the given text.
+func (m Model) addItem(text string) tea.Cmd {
+	return func() tea.Msg {
+		item := todo.Todo{Text: text, Position: len(m.items) + 1}
+		if err := m.repo.SaveItems([]todo.Todo{item}); err != nil {
+			return refreshMsg{items: m.items, err: err}
+		}
+		return m.refresh()
+	}
+}
+
 // deleteCurrent removes the item under the cursor.
 func (m Model) deleteCurrent() tea.Cmd {
 	item := m.items[m.cursor]
@@ -96,6 +116,31 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
+		// Input mode captures all keys except its own controls.
+		if m.adding {
+			switch msg.String() {
+			case "ctrl+c":
+				return m, tea.Quit
+			case "esc":
+				m.adding = false
+				m.input.Reset()
+				return m, nil
+			case "enter":
+				text := strings.TrimSpace(m.input.Value())
+				m.adding = false
+				m.input.Reset()
+				if text == "" {
+					return m, nil
+				}
+				m.loading = true
+				m.err = nil
+				return m, m.addItem(text)
+			}
+			var cmd tea.Cmd
+			m.input, cmd = m.input.Update(msg)
+			return m, cmd
+		}
+
 		// Always allow quitting, even mid-operation.
 		switch msg.String() {
 		case "q", "ctrl+c":
@@ -130,6 +175,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.loading = true
 			m.err = nil
 			return m, m.deleteCurrent()
+		case "a":
+			m.adding = true
+			m.err = nil
+			m.input.Focus()
+			return m, textinput.Blink
 		}
 	}
 	return m, nil

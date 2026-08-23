@@ -53,6 +53,18 @@ func (m *mockStore) UpdateItemStatus(id int, done bool) error {
 	return nil
 }
 
+// UpdateItem updates an item in the mock store.
+func (m *mockStore) UpdateItem(item Todo) error {
+	if m.updateErr != nil {
+		return m.updateErr
+	}
+	if _, ok := m.items[item.ID]; !ok {
+		return m.notFoundErr
+	}
+	m.items[item.ID] = item
+	return nil
+}
+
 // DeleteItem removes an item from the mock store.
 func (m *mockStore) DeleteItem(id int) error {
 	delete(m.items, id)

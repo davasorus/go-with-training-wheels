@@ -2,12 +2,13 @@ package Database
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/davasorus/tri/models"
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 )
 
 // Config holds database connection parameters.
@@ -34,7 +35,7 @@ func NewStore(db *sql.DB) (*Store, error) {
 
 // ListItems fetches all items from the database.
 func (s *Store) ListItems() ([]models.Todo, error) {
-	rows, err := s.db.Query(`SELECT id, text, priority, position, done, due_date FROM todos`)
+	rows, err := s.db.Query(`SELECT id, text, priority, position, done, due_date, created_at, completed_at, COALESCE(tags, '{}') FROM todos`)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query items: %w", err)
 	}
@@ -43,7 +44,7 @@ func (s *Store) ListItems() ([]models.Todo, error) {
 	var items []models.Todo
 	for rows.Next() {
 		var item models.Todo
-		err := rows.Scan(&item.ID, &item.Text, &item.Priority, &item.Position, &item.Done, &item.DueDate)
+		err := rows.Scan(&item.ID, &item.Text, &item.Priority, &item.Position, &item.Done, &item.DueDate, &item.CreatedAt, &item.CompletedAt, pq.Array(&item.Tags))
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan item: %w", err)
 		}
@@ -66,14 +67,15 @@ func (s *Store) SaveItems(items []models.Todo) error {
 	defer func() { _ = tx.Rollback() }()
 
 	for _, item := range items {
-		_, err := tx.Exec(`INSERT INTO todos (text, priority, position, done, due_date) 
-			VALUES ($1, $2, $3, $4, $5)
-			ON CONFLICT (text) DO UPDATE SET 
+		_, err := tx.Exec(`INSERT INTO todos (text, priority, position, done, due_date, tags)
+			VALUES ($1, $2, $3, $4, $5, $6)
+			ON CONFLICT (text) DO UPDATE SET
 				priority = EXCLUDED.priority,
 				position = EXCLUDED.position,
 				done = EXCLUDED.done,
-				due_date = EXCLUDED.due_date`,
-			item.Text, item.Priority, item.Position, item.Done, item.DueDate)
+				due_date = EXCLUDED.due_date,
+				tags = EXCLUDED.tags`,
+			item.Text, item.Priority, item.Position, item.Done, item.DueDate, pq.Array(item.Tags))
 		if err != nil {
 			return fmt.Errorf("failed to insert item: %w", err)
 		}
@@ -87,13 +89,29 @@ func (s *Store) SaveItems(items []models.Todo) error {
 
 // UpdateItemStatus updates the status of a specific todo by its ID.
 func (s *Store) UpdateItemStatus(id int, done bool) error {
-	res, err := s.db.Exec(`UPDATE todos SET done = $1 WHERE id = $2`, done, id)
+	res, err := s.db.Exec(`UPDATE todos SET done = $1,
+		completed_at = CASE WHEN $1 THEN now() ELSE NULL END
+		WHERE id = $2`, done, id)
 	if err != nil {
 		return fmt.Errorf("failed to update item: %w", err)
 	}
 	rowsAffected, _ := res.RowsAffected()
 	if rowsAffected == 0 {
 		return fmt.Errorf("no record found with id %d", id)
+	}
+	return nil
+}
+
+// UpdateItem updates the editable fields of a todo by its ID.
+func (s *Store) UpdateItem(item models.Todo) error {
+	res, err := s.db.Exec(`UPDATE todos SET text = $1, priority = $2, position = $3, due_date = $4, tags = $5 WHERE id = $6`,
+		item.Text, item.Priority, item.Position, item.DueDate, pq.Array(item.Tags), item.ID)
+	if err != nil {
+		return fmt.Errorf("failed to update item: %w", err)
+	}
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("no record found with id %d", item.ID)
 	}
 	return nil
 }
@@ -145,7 +163,14 @@ func InitDB() (*Store, error) {
 	}
 
 	if err = db.Ping(); err != nil {
-		// If ping fails, the database may not exist. Try to create it if missing.
+		// An authentication failure will not improve with a retry or a
+		// create-database attempt. Report it directly.
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) && pqErr.Code == "28P01" {
+			return nil, fmt.Errorf("authentication failed for user %q: check DB_PASSWORD in Database/.env", cfg.User)
+		}
+
+		// Otherwise the database may not exist. Try to create it if missing.
 		fmt.Printf("Ping failed. Attempt to ensure database %s exists...\n", cfg.DBName)
 
 		// Connect to the default 'postgres' database to check or create the target.

@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-add-timestamps-and-tags
+      author: sean
+      changes:
+        - addColumn:
+            tableName: todos
+            columns:
+              - column:
+                  name: created_at
+                  type: timestamptz
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: completed_at
+                  type: timestamptz
+              - column:
+                  name: tags
+                  type: text[]
+                  defaultValue: "{}"
