@@ -5,66 +5,81 @@ package cmd
 
 import (
 	"fmt"
-	"log/slog"
 	"sort"
-	"strconv"
 
 	"github.com/davasorus/tri/todo"
 	"github.com/spf13/cobra"
 )
 
-// doneCmd represents the command to mark a task as complete.
-var doneCmd = &cobra.Command{
-	Use:     "done",
-	Aliases: []string{"do"},
-	Short:   "Mark a task as completed.",
-	Long: `Mark a task as done using its position in the list.
+// doneCmd returns the command to mark a task as completed.
+func doneCmd(repo todo.TodoStore) *cobra.Command {
+	return &cobra.Command{
+		Use:     "done",
+		Aliases: []string{"do"},
+		Short:   "Mark a task as completed.",
+		Long: `Mark a task as done using its position in the list.
 Example: tri do 1`,
-	Run: doneRun,
-}
-
-func init() {
-	rootCmd.AddCommand(doneCmd)
-}
-
-// doneRun handles the logic for marking a task as completed.
-func doneRun(cmd *cobra.Command, args []string) {
-	if len(args) == 0 {
-		slog.Error("No index provided")
-		return
-	}
-
-	err := processDone(args[0])
-	if err != nil {
-		slog.Error("Failed to mark done", "error", err)
-		return
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var text string
+			err := WaitSpinner("Marking as done", func() error {
+				var err error
+				text, err = executeUpdate(repo, args[0], true)
+				return err
+			})
+			if err != nil {
+				return err
+			}
+			fmt.Printf("Marked done: %q\n", text)
+			return nil
+		},
 	}
 }
 
-// processDone handles the logic for finding and marking a task as completed.
-func processDone(argStr string) error {
-	items, err := todo.LoadItems()
+// undoCmd returns the command to mark a task as not completed.
+func undoCmd(repo todo.TodoStore) *cobra.Command {
+	return &cobra.Command{
+		Use:     "undo",
+		Aliases: []string{"undone"},
+		Short:   "Mark a task as not completed.",
+		Long: `Mark a done task as not done, using its number from 'tri list'.
+Example: tri undo 1`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var text string
+			err := WaitSpinner("Marking as not done", func() error {
+				var err error
+				text, err = executeUpdate(repo, args[0], false)
+				return err
+			})
+			if err != nil {
+				return err
+			}
+			fmt.Printf("Marked not done: %q\n", text)
+			return nil
+		},
+	}
+}
+
+// executeUpdate finds a task by its list position, sets its done state,
+// and returns the task text for the success message.
+func executeUpdate(r todo.TodoStore, argStr string, done bool) (string, error) {
+	items, err := r.ListItems()
 	if err != nil {
-		return fmt.Errorf("failed to load items: %w", err)
+		return "", fmt.Errorf("failed to load items: %w", err)
 	}
 
-	i, err := strconv.Atoi(argStr)
-	if err != nil {
-		return fmt.Errorf("invalid index provided: %w", err)
-	}
-
-	if i <= 0 || i > len(items) {
-		return fmt.Errorf("%d does not match any item", i)
-	}
-
-	items[i-1].Done = true
+	// Match the ordering the user saw in `tri list`.
 	sort.Sort(todo.ByPri(items))
 
-	err = todo.SaveItems(items)
+	idx, err := validateIndex(argStr, len(items))
 	if err != nil {
-		return fmt.Errorf("failed to save items: %w", err)
+		return "", err
 	}
 
-	slog.Info("Marked todo as done", "index", i)
-	return nil
+	item := items[idx-1]
+	if err := r.UpdateItemStatus(item.ID, done); err != nil {
+		return "", fmt.Errorf("failed to update item: %w", err)
+	}
+	return item.Text, nil
 }

@@ -1,3 +1,6 @@
+/*
+Copyright © 2026 NAME HERE <EMAIL ADDRESS>
+*/
 package todo
 
 import (
@@ -43,6 +46,16 @@ func TestTodoMethods(t *testing.T) {
 			},
 		},
 		{
+			name: "SetPriority OutOfRange",
+			item: Todo{Text: "Test", Priority: 5},
+			testFunc: func(t *testing.T, i Todo) {
+				i.SetPriority(3)
+				if i.Priority != 0 {
+					t.Errorf("Expected priority 0 for out-of-range input, got %d", i.Priority)
+				}
+			},
+		},
+		{
 			name: "PrettyP Logic",
 			item: Todo{Text: "Test", Priority: 0},
 			testFunc: func(t *testing.T, i Todo) {
@@ -66,6 +79,15 @@ func TestTodoMethods(t *testing.T) {
 			testFunc: func(t *testing.T, i Todo) {
 				if i.PrettyP() != "High" {
 					t.Errorf("Expected High, got %s", i.PrettyP())
+				}
+			},
+		},
+		{
+			name: "PrettyP OutOfRange",
+			item: Todo{Text: "Test", Priority: 3},
+			testFunc: func(t *testing.T, i Todo) {
+				if i.PrettyP() != "Low" {
+					t.Errorf("Expected Low for out-of-range priority, got %s", i.PrettyP())
 				}
 			},
 		},

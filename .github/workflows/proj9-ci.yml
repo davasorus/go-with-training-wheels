@@ -1,0 +1,50 @@
+name: proj9 CI
+
+on:
+  push:
+    paths:
+      - "proj9/**"
+      - ".github/workflows/proj9-ci.yml"
+  pull_request:
+    paths:
+      - "proj9/**"
+      - ".github/workflows/proj9-ci.yml"
+
+defaults:
+  run:
+    working-directory: proj9
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: proj9/go.mod
+          cache-dependency-path: proj9/go.sum
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.4.0
+          working-directory: proj9
+
+      - name: Test
+        run: go test -race ./...
+
+      - name: Check formatting
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "Files not gofmt-formatted:"
+            echo "$unformatted"
+            exit 1
+          fi

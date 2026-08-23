@@ -4,16 +4,31 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"strings"
 	"time"
 )
 
 // Todo represents a single task in the list.
 type Todo struct {
-	Text     string
-	Priority int
-	Position int
-	Done     bool
-	DueDate  *time.Time // Use a pointer to handle NULL values from the database
+	ID          int        `json:"id"`
+	Text        string     `json:"text"`
+	Priority    int        `json:"priority"`
+	Position    int        `json:"position"`
+	Done        bool       `json:"done"`
+	DueDate     *time.Time `json:"due_date,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+	Tags        []string   `json:"tags,omitempty"`
+}
+
+// HasTag reports whether the task carries the given tag (case-insensitive).
+func (i *Todo) HasTag(tag string) bool {
+	for _, t := range i.Tags {
+		if strings.EqualFold(t, tag) {
+			return true
+		}
+	}
+	return false
 }
 
 // ByPri is a type for sorting tasks by priority and position.
@@ -22,22 +37,18 @@ type ByPri []Todo
 func (a ByPri) Len() int      { return len(a) }
 func (a ByPri) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ByPri) Less(i, j int) bool {
-	if a[i].Done && !a[j].Done {
+	if a[i].Done != a[j].Done {
 		return a[i].Done
 	}
-	if a[i].Priority == a[j].Priority {
-		return a[i].Position < a[j].Position
+	if a[i].Priority != a[j].Priority {
+		return a[i].Priority > a[j].Priority
 	}
 	return a[i].Position < a[j].Position
 }
 
 // SaveItems saves a slice of Todo items to the database using an UPSERT pattern.
-func SaveItems(items []Todo) error {
-	repo, err := NewRepository()
-	if err != nil {
-		return fmt.Errorf("failed to initialize repository: %w", err)
-	}
-	err = repo.SaveItems(items)
+func SaveItems(r TodoStore, items []Todo) error {
+	err := r.SaveItems(items)
 	if err != nil {
 		return fmt.Errorf("failed to save items: %w", err)
 	}
@@ -46,12 +57,8 @@ func SaveItems(items []Todo) error {
 }
 
 // LoadItems retrieves all Todo items from the database.
-func LoadItems() ([]Todo, error) {
-	repo, err := NewRepository()
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize repository: %w", err)
-	}
-	items, err := repo.ListItems()
+func LoadItems(r TodoStore) ([]Todo, error) {
+	items, err := r.ListItems()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load items: %w", err)
 	}

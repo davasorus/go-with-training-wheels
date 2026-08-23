@@ -1,6 +1,3 @@
-/*
-Copyright © 2026 Sean Davitt
-*/
 package cmd
 
 import (
@@ -8,15 +5,15 @@ import (
 	"os"
 
 	"github.com/davasorus/tri/Database"
+	"github.com/davasorus/tri/todo"
 	"github.com/spf13/cobra"
 )
 
-var dataFile string
-
 // rootCmd represents the base command of the tri tool.
 var rootCmd = &cobra.Command{
-	Use:   "tri",
-	Short: "A brief description of your application",
+	Use:          "tri",
+	SilenceUsage: true,
+	Short:        "A brief description of your application",
 	Long: `A longer description of the application.
 Example:
 tri add -p high task name`,
@@ -24,19 +21,28 @@ tri add -p high task name`,
 
 // Execute initializes the database and runs the command tree.
 func Execute() {
-	if err := Database.InitDB(); err != nil {
+	store, err := Database.InitDB()
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "Database connection error: %v\n", err)
 		os.Exit(1)
 	}
 
-	err := rootCmd.Execute()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+	adapter := todo.NewTodoStoreAdapter(store)
+	repo := todo.NewRepository(adapter)
+
+	// Register subcommands with the repository injected.
+	rootCmd.AddCommand(addCmd(repo))
+	rootCmd.AddCommand(listCmd(repo))
+	rootCmd.AddCommand(doneCmd(repo))
+	rootCmd.AddCommand(undoCmd(repo))
+	rootCmd.AddCommand(editCmd(repo))
+	rootCmd.AddCommand(moveCmd(repo))
+	rootCmd.AddCommand(exportCmd(repo))
+	rootCmd.AddCommand(clearCmd(repo))
+	rootCmd.AddCommand(deleteCmd(repo))
+	rootCmd.AddCommand(NewMigrateDbCmd())
+
+	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
-}
-
-func init() {
-	// Define global flags here.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

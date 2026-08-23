@@ -1,0 +1,13 @@
+# Pins the lint configuration this repo is verified against.
+# Run locally with: golangci-lint run
+version: "2"
+
+linters:
+  # Defaults (errcheck, govet, ineffassign, staticcheck, unused) plus:
+  enable:
+    - misspell
+    - unconvert
+
+formatters:
+  enable:
+    - gofmt

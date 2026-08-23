@@ -25,5 +25,8 @@ go.work.sum
 .env
 
 .vscode/
+*.bak
+
 
 liquibase.properties
+proj9/tri
