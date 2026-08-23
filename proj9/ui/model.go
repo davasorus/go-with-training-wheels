@@ -18,15 +18,20 @@ type refreshMsg struct {
 type Model struct {
 	repo    todo.TodoStore
 	items   []todo.Todo
+	filter  func(todo.Todo) bool
 	cursor  int
 	loading bool
 	err     error
 }
 
-func NewModel(repo todo.TodoStore, items []todo.Todo) Model {
+// NewModel builds the model. filter may be nil, in which case all
+// items are shown. A non-nil filter is re-applied on every refresh so
+// command-line filters survive toggles and deletes.
+func NewModel(repo todo.TodoStore, items []todo.Todo, filter func(todo.Todo) bool) Model {
 	return Model{
-		repo:  repo,
-		items: items,
+		repo:   repo,
+		items:  items,
+		filter: filter,
 	}
 }
 
@@ -40,6 +45,15 @@ func (m Model) refresh() tea.Msg {
 	items, err := m.repo.ListItems()
 	if err != nil {
 		return refreshMsg{items: m.items, err: err}
+	}
+	if m.filter != nil {
+		kept := items[:0]
+		for _, it := range items {
+			if m.filter(it) {
+				kept = append(kept, it)
+			}
+		}
+		items = kept
 	}
 	sort.Sort(todo.ByPri(items))
 	return refreshMsg{items: items}

@@ -44,12 +44,12 @@ Note: the tool also creates the database on first connection if the database is 
 
 ```
 ./tri add "Write the report"
-./tri add -p 2 "Fix the build"
+./tri add -p high "Fix the build"
 ./tri add -d 2026-09-01 "File the report"
 ./tri add --due tomorrow "Call the vendor"
 ```
 
-The `-p` / `--priority` flag sets the priority. Use `0` for Low, `1` for Medium, `2` for High. The default value is Low.
+The `-p` / `--priority` flag sets the priority. Use `low`, `medium`, or `high`. The numbers `0`, `1`, and `2` are also valid. The default value is `low`.
 
 The `-d` / `--due` flag sets the due date. Use the format `YYYY-MM-DD`, or the words `today` or `tomorrow`. Tasks with no `--due` flag have no due date.
 
@@ -74,7 +74,9 @@ Task text must be unique. If you add a task with text that exists, the tool upda
 | `-q`, `--query <text>` | Show only tasks that contain `<text>` in the label or text. |
 | `--interactive` | Open the task list in a terminal UI. |
 
-The list is sorted by priority. The number before each task is its position. The `done` and `delete` commands use this position.
+The list is sorted by priority. The number before each task is its row number in the full sorted list. The `done` and `delete` commands use this number.
+
+Caution: the `done` and `delete` commands always count against the full list. Run `tri list` with no filter flags to see the correct numbers before you use `done` or `delete`.
 
 In the interactive view:
 - Use the arrow keys or `j` / `k` to move.
@@ -82,7 +84,7 @@ In the interactive view:
 - Press `d` to delete the selected task.
 - Press `q` or `Ctrl+C` to quit.
 
-The interactive view reloads all tasks after each change. Filters from the command line do not persist after a change.
+The interactive view reloads the tasks after each change. Filters from the command line stay in effect.
 
 ### Complete a task
 

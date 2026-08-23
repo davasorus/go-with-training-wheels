@@ -36,4 +36,8 @@ func Execute() {
 	rootCmd.AddCommand(clearCmd(repo))
 	rootCmd.AddCommand(deleteCmd(repo))
 	rootCmd.AddCommand(NewMigrateDbCmd())
+
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }

@@ -131,7 +131,7 @@ func InitDB() (*Store, error) {
 		cfg.DBName = "todos"
 	}
 
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable connect_timeout=5",
 		cfg.Host,
 		cfg.Port,
 		cfg.User,
@@ -149,7 +149,7 @@ func InitDB() (*Store, error) {
 		fmt.Printf("Ping failed. Attempt to ensure database %s exists...\n", cfg.DBName)
 
 		// Connect to the default 'postgres' database to check or create the target.
-		adminDSN := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=postgres sslmode=disable",
+		adminDSN := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=postgres sslmode=disable connect_timeout=5",
 			cfg.Host, cfg.Port, cfg.User, cfg.Password)
 
 		tmpDB, errTmp := sql.Open("postgres", adminDSN)

@@ -25,7 +25,7 @@ func renderList(w io.Writer, items []todo.Todo, showOnlyDone bool, nearDays int,
 	_, _ = fmt.Fprintln(tw, "ID", "Priority", "Task", "Status", "Due Date")
 	_, _ = fmt.Fprintln(tw)
 	now := time.Now()
-	for _, i := range items {
+	for idx, i := range items {
 		if !showOnlyDone || i.Done {
 			dateStr := ""
 			if i.DueDate != nil {
@@ -54,7 +54,7 @@ func renderList(w io.Writer, items []todo.Todo, showOnlyDone bool, nearDays int,
 				style = style.Foreground(lipgloss.Color("1"))
 			}
 
-			taskLabel := i.Label()
+			taskLabel := fmt.Sprintf("%d.", idx+1)
 			if i.Done {
 				taskLabel = style.Render(fmt.Sprintf("~~%s~~", taskLabel))
 			} else {
@@ -76,8 +76,52 @@ func renderList(w io.Writer, items []todo.Todo, showOnlyDone bool, nearDays int,
 	}
 }
 
-func runTUI(repo todo.TodoStore, items []todo.Todo) {
-	m := ui.NewModel(repo, items)
+// buildFilter composes the list filters into one predicate.
+// It returns nil when no filter flags are active.
+func buildFilter(doneOpt bool, nearOpt int, queryOpt string) func(todo.Todo) bool {
+	if !doneOpt && nearOpt <= 0 && queryOpt == "" {
+		return nil
+	}
+	now := time.Now()
+	return func(itm todo.Todo) bool {
+		if doneOpt && !itm.Done {
+			return false
+		}
+		if nearOpt > 0 {
+			if itm.DueDate == nil {
+				return false
+			}
+			daysUntil := itm.DueDate.Sub(now).Hours() / 24
+			if daysUntil < 0 || daysUntil > float64(nearOpt) {
+				return false
+			}
+		}
+		if queryOpt != "" {
+			q := strings.ToLower(queryOpt)
+			if !strings.Contains(strings.ToLower(itm.Label()), q) &&
+				!strings.Contains(strings.ToLower(itm.Text), q) {
+				return false
+			}
+		}
+		return true
+	}
+}
+
+func applyFilter(items []todo.Todo, filter func(todo.Todo) bool) []todo.Todo {
+	if filter == nil {
+		return items
+	}
+	var kept []todo.Todo
+	for _, itm := range items {
+		if filter(itm) {
+			kept = append(kept, itm)
+		}
+	}
+	return kept
+}
+
+func runTUI(repo todo.TodoStore, items []todo.Todo, filter func(todo.Todo) bool) {
+	m := ui.NewModel(repo, items, filter)
 	p := tea.NewProgram(m)
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Error running TUI: %v\n", err)
@@ -104,45 +148,11 @@ Example: tri list --done`,
 
 			sort.Sort(todo.ByPri(items))
 
-			// Apply filters to the items list
-			filteredItems := items
-			if doneOpt {
-				var filtered []todo.Todo
-				for _, itm := range items {
-					if itm.Done {
-						filtered = append(filtered, itm)
-					}
-				}
-				filteredItems = filtered
-			}
-
-			if nearOpt > 0 {
-				var filtered []todo.Todo
-				now := time.Now()
-				for _, itm := range items {
-					if itm.DueDate != nil {
-						daysUntil := itm.DueDate.Sub(now).Hours() / 24
-						if daysUntil >= 0 && daysUntil <= float64(nearOpt) {
-							filtered = append(filtered, itm)
-						}
-					}
-				}
-				filteredItems = filtered
-			}
-
-			if queryOpt != "" {
-				var filtered []todo.Todo
-				for _, itm := range items {
-					if strings.Contains(strings.ToLower(itm.Label()), strings.ToLower(queryOpt)) ||
-						strings.Contains(strings.ToLower(itm.Text), strings.ToLower(queryOpt)) {
-						filtered = append(filtered, itm)
-					}
-				}
-				filteredItems = filtered
-			}
+			filter := buildFilter(doneOpt, nearOpt, queryOpt)
+			filteredItems := applyFilter(items, filter)
 
 			if interactiveOpt {
-				runTUI(repo, filteredItems)
+				runTUI(repo, filteredItems, filter)
 				return
 			}
 

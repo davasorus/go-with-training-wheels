@@ -12,15 +12,46 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// priorityFlag is a pflag.Value that accepts numeric (0-2) and named
+// (low, medium, high) priority values.
+type priorityFlag int
+
+func (p *priorityFlag) String() string {
+	switch int(*p) {
+	case 2:
+		return "high"
+	case 1:
+		return "medium"
+	default:
+		return "low"
+	}
+}
+
+func (p *priorityFlag) Set(s string) error {
+	switch strings.ToLower(s) {
+	case "0", "low":
+		*p = 0
+	case "1", "medium", "med":
+		*p = 1
+	case "2", "high":
+		*p = 2
+	default:
+		return fmt.Errorf(`invalid priority %q: use low, medium, high, or 0-2`, s)
+	}
+	return nil
+}
+
+func (p *priorityFlag) Type() string { return "priority" }
+
 // addCmd returns the command for adding a task.
 func addCmd(repo todo.TodoStore) *cobra.Command {
-	var priority int
+	var priority priorityFlag
 	var due string
 	cmd := &cobra.Command{
 		Use:   "add",
 		Short: "Add a new task with priority.",
 		Long: `Add a new task to the system.
-Example: tri add -p 2 --due tomorrow "Fix the build"`,
+Example: tri add -p high --due tomorrow "Fix the build"`,
 		Run: func(cmd *cobra.Command, args []string) {
 			dueDate, err := parseDueDate(due)
 			if err != nil {
@@ -28,7 +59,7 @@ Example: tri add -p 2 --due tomorrow "Fix the build"`,
 				return
 			}
 
-			items := prepareAddItems(args, priority, dueDate)
+			items := prepareAddItems(args, int(priority), dueDate)
 
 			err = WaitSpinner("Saving items", func() error {
 				return repo.SaveItems(items)
@@ -39,7 +70,7 @@ Example: tri add -p 2 --due tomorrow "Fix the build"`,
 			}
 		},
 	}
-	cmd.Flags().IntVarP(&priority, "priority", "p", 0, "Priority of the task (0=Low, 1=Medium, 2=High).")
+	cmd.Flags().VarP(&priority, "priority", "p", "Priority of the task: low, medium, or high (or 0-2).")
 	cmd.Flags().StringVarP(&due, "due", "d", "", `Due date: YYYY-MM-DD, "today", or "tomorrow".`)
 	return cmd
 }
